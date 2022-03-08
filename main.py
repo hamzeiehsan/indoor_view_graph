@@ -24,6 +24,7 @@ address = 'envs/hypo/'
 polygon_file = 'hypo_env.geojson'
 holes_file = 'hypo_holes.geojson'
 doors_file = 'hypo_doors.geojson'
+landmarks = 'hypo_landmarks.geojson'
 
 test = False
 test_regions = True
@@ -143,6 +144,7 @@ boundary = read_geojson(address, polygon_file)['features'][0]['geometry']['coord
 holes = read_geojson(address, holes_file)['features']
 doors = read_geojson(address, doors_file)['features']
 # dpoints = read_geojson(address, dpoint_file)['features']
+landmarks = read_geojson(address, landmarks)['features']
 
 space_poly = reformat_polygon(boundary, is_hole=False)
 space_x, space_y = save_print_geojson(boundary)
@@ -167,6 +169,9 @@ for d in doors:
 door_idx = len(door_points)
 # for d in dpoints:
 #     door_points.append(reformat_point(d['geometry']['coordinates']))
+landmarks_points = []
+for l in landmarks:
+    landmarks_points.append(reformat_point(l['geometry']['coordinates']))
 
 print('calculating the isovist polygons')
 isovists = []
@@ -668,7 +673,7 @@ def plot_region(rid):
     plt.clf()
 
 
-def plot_shp(shp):
+def plot_shp(shp, point=False):
     d_x = None
     d_y = None
     if isinstance(shp, int):
@@ -680,6 +685,9 @@ def plot_shp(shp):
     fig, ax = plt.subplots()
     plt.plot(space_x, space_y, 'black')
     plt.plot([d_x], [d_y], 'go')
+    if point:
+        for p in door_points:
+            plt.plot([p.x()], [p.y()], 'go')
     for i in range(0, len(holes_x)):
         plt.plot(holes_x[i], holes_y[i], 'r')
     plt.plot(r_x, r_y, 'b')
@@ -795,7 +803,7 @@ def view_vision(view_idx, fov=120, is_start=True, isovist_view=None):
         isovist_view = isovist_calc(x, y)
     return isovist_view.intersection(triangle)
 
-def view_vision_signature(view_coverage):
+def view_vision_signature(view_coverage, door_points=door_points):
     signature = []
     for idx, p in enumerate(door_points):
         if view_coverage.contains(Point(p.x(), p.y())) or view_coverage.touches(Point(p.x(), p.y())):
@@ -814,14 +822,14 @@ def decompose_view(view_idx):
 
     return decomposed_views
 
-def test_vision(vid):
+def demo_vision(vid):
     vv = view_vision(vid)
     ids = rview_ids[vid]
     shortest_path_regions(ids[0], ids[1])
     centroid = regions_info[ids[0]]
     iso = isovist_calc(centroid.x, centroid.y)
     plot_shp(iso)
-    plot_shp(vv)
+    plot_shp(vv, point=True)
     print('signature: {}'.format(view_vision_signature(vv)))
 
 
@@ -834,3 +842,20 @@ def test_vision(vid):
         # field of view: (should be applied to significantly reduce the number of nodes)
         # algorithmic design for graph pruning
     # pruning based on the triangles ...
+
+# :
+    # meaningless regions -- agent's space
+    # meaningless region connections --> moving towards a less important region?
+    # adding landmarks for capturing spatial information about the environment:
+        # egocentric
+        # alocentric
+        # cardinal
+        # order
+    # compare views based on their information
+
+def calculate_spatial_relationships(vid):
+    vv = view_vision(vid)
+    door_signature = view_vision_signature(vv)
+    print(door_signature)
+    landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
+    print(landmark_signature)
