@@ -688,6 +688,8 @@ def plot_shp(shp, point=False):
     if point:
         for p in door_points:
             plt.plot([p.x()], [p.y()], 'go')
+        for l in landmarks_points:
+            plt.plot([l.x()], [l.y()], 'ro')
     for i in range(0, len(holes_x)):
         plt.plot(holes_x[i], holes_y[i], 'r')
     plt.plot(r_x, r_y, 'b')
@@ -859,3 +861,59 @@ def calculate_spatial_relationships(vid):
     print(door_signature)
     landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
     print(landmark_signature)
+
+    view_points = rviews[vid]
+    points = {}
+    for d in door_signature:
+        d_point = door_points[d]
+        points['door {}'.format(d)] = Point(d_point.x(), d_point.y())
+    for l in landmark_signature:
+        l_point = landmarks_points[l]
+        points['landmark {}'.format((l))] = Point(l_point.x(), l_point.y())
+    ego_rels = egocentric_relationships(view_points, points)
+    return ego_rels
+
+
+def ego_dir(a, b, c):
+    det = ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+    if det > 0:
+        return 'on the left'
+    elif det == 0:
+        return 'in the front'
+    else:
+        return 'on the right'
+
+
+def ego_order(view_points, points):
+    start = view_points[0]
+    end = calculate_coordinates(view_points, 0, 20)
+    line = LineString([start, end])
+    distances = {}
+    for idx, p in points.items():
+        d = line.project(p)
+        distances[idx] = d
+    return dict(sorted(distances.items(), key=lambda item: item[1]))
+
+
+def egocentric_relationships(view_points, points):
+    dirs = {}
+    lefts = {}
+    rights = {}
+    for idx, p in points.items():
+        dir_rel = ego_dir(view_points[0], view_points[1], p)
+        if dir_rel == 'on the left':
+            lefts[idx] = p
+        elif dir_rel == 'on the right':
+            rights[idx] = p
+        dirs[idx] = {'dir': dir_rel, 'order': None}
+    left_orders = ego_order(view_points, lefts)
+    right_orders = ego_order(view_points, rights)
+    counter = 1
+    for k,v in left_orders.items():
+        dirs[k]['order'] = counter
+        counter += 1
+    counter = 1
+    for k,v in right_orders.items():
+        dirs[k]['order'] = counter
+        counter += 1
+    return dirs
