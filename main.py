@@ -840,14 +840,14 @@ def demo_vision(vid):
         # impact the shortest paths -> going back
     # decompose long views (that intersect multiple visibility regions)
     # reduce the number of nodes (and edges)
-        # views -- unique visible information
+        # views -- unique visible information -- egocentric view (project to the line itself)
         # field of view: (should be applied to significantly reduce the number of nodes)
         # algorithmic design for graph pruning
     # pruning based on the triangles ...
 
 # :
     # meaningless regions -- agent's space
-    # meaningless region connections --> moving towards a less important region?
+    # meaningless region connections --> moving towards a less important region? (?)
     # adding landmarks for capturing spatial information about the environment:
         # egocentric
         # alocentric
