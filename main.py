@@ -12,7 +12,7 @@ from shapely.geometry import Polygon as Poly
 from shapely.ops import unary_union, polygonize, nearest_points
 import networkx as nx
 import geopy.distance as distance
-from numpy import arctan2, sin, cos, degrees
+from numpy import arctan2, sin, cos, degrees, tan
 import geopandas as gpd
 
 # address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
@@ -823,6 +823,42 @@ def decompose_view(view_idx):
         pass   # todo
 
     return decomposed_views
+
+def decompose_view_disappear(view_idx):
+    decomposed = []
+    view = rviews[view_idx]
+    ids = rview_ids[view_idx]
+    destination = None
+    if ids[1] in regions_doors_info.keys():
+        destination = regions_doors_info[ids[1]]
+    view_line = rview_ls[view_idx]
+    vv = view_vision(view_idx)
+    # line= calculate_coordinates(view, 270, 20)
+    # todo calculate line intersection based on fov (270 if 120)
+    points = {'end': view[1]}
+    door_signature = view_vision_signature(vv)
+    for dix in door_signature:
+        points['door {}'.format(dix)] = Point(door_points[dix].x(), door_points[dix].y())
+    landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
+    for lix in landmark_signature:
+        points['landmark {}'.format(lix)] = Point(landmarks_points[lix].x(), landmarks_points[lix].y())
+    orders = ego_order(view, points)
+    disappear_points = {}
+    for key, d in orders.items():
+        if key == 'end' or (destination is not None and 'door {}'.format(destination) == key):
+            break
+        disappear_points[key] = view_line.interpolate(d - disappear_shift(vid, d))
+    return disappear_points
+
+
+def disappear_shift(vid, d, fov=120):
+    view_line = rview_ls[vid]
+    point = view_line.interpolate(d)
+    p1, p2 = nearest_points(view_line, point)
+    a = (90 - fov/2)/180*math.pi
+    shift = tan(a)*point.distance(p1)
+    return shift
+
 
 def demo_vision(vid):
     vv = view_vision(vid)
