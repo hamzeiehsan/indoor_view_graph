@@ -941,9 +941,9 @@ def demo_vision(vid):
 def calculate_spatial_relationships(vid):
     vv = view_vision(vid)
     door_signature = view_vision_signature(vv)
-    print(door_signature)
+    # print(door_signature)
     landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
-    print(landmark_signature)
+    # print(landmark_signature)
 
     view_points = rviews[vid]
     points = {}
@@ -989,6 +989,25 @@ def egocentric_relationships(view_points, points):
         dirs[k]['order'] = counter
         counter += 1
     return dirs
+
+def is_same_info(rel1, rel2):
+    if len(rel1) != len(rel2):
+        return False
+    for key1, val1 in rel1.items():
+        if key1 not in rel2.items():
+            return False
+        elif rel2[key1] != rel1[key1]:
+            return False
+    return True
+
+def check_duplicate_views():
+    srelations = {}
+    for vid in rview_ids.keys():
+        srelations[vid] = calculate_spatial_relationships(vid)
+    for vid1, srel1 in srelations.items():
+        for vid2, srel2 in srelations.items() and len(srel1) > 0:
+            if vid1 != vid2 and is_same_info(srel1, srel2):
+                print('duplicate info {0} - {1}: {2}'.format(vid1, vid2, srel1))
 
 def demo(object_based=test, region_based=test_regions):
     if object_based:
