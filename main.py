@@ -588,29 +588,239 @@ for idx, signature in enumerate(signatures):
             rview_ls[counter] = view_line
         counter+=1
 
+def which_region(point):
+    for idx, r in enumerate(regions_list):
+        if r.contains(point) or point.touches(r):
+            return idx
+
+
+def vision_triangle(view_id, fov=120):
+    v = rviews[view_id]
+    p1 = v[0]
+    p2 = calculate_coordinates(v=v, angle=fov/2, d=50)
+    p3 = calculate_coordinates(v=v, angle=-fov/2, d=50)
+    return Poly([[p.x, p.y] for p in [p1, p2, p3]])
+
+def isovist_calc(x, y):
+    door = vis.Point(x,y)
+    door.snap_to_boundary_of(env, epsilon)
+    door.snap_to_vertices_of(env, epsilon)
+    isovist = vis.Visibility_Polygon(door, env, epsilon)
+    iso_x, iso_y = save_print(isovist)
+    geojson_polygon = to_polygon_geojson(iso_x, iso_y)
+    shp = to_polygon_shape(geojson_polygon, clip=True)
+    if not shp.is_valid:
+        print('invalid')
+    if isinstance(shp, MultiPolygon):
+        test_case = shp
+        shps = list(shp)
+        areas = [s.area for s in shps]
+        max_area = max(areas)
+        idxs = areas.index(max_area)
+        shp = shps[idxs]
+        test_idx = idx
+    return shp
+
+def view_vision(view_idx, fov=120, is_start=True, isovist_view=None):
+    triangle = vision_triangle(view_idx, fov)
+    view_line = rview_ls[view_idx]
+    if isovist_view is None:
+        if is_start:
+            x = view_line.xy[0][0]
+            y = view_line.xy[1][0]
+        else:
+            x = view_line.xy[0][1]
+            y = view_line.xy[1][1]
+        isovist_view = isovist_calc(x, y)
+    return isovist_view.intersection(triangle)
+
+def view_vision_signature(view_coverage, door_points=door_points):
+    signature = []
+    for idx, p in enumerate(door_points):
+        if view_coverage.contains(Point(p.x(), p.y())) or view_coverage.touches(Point(p.x(), p.y())):
+            signature.append(idx)
+    return signature
+
+def ego_order(view_points, points):
+    start = view_points[0]
+    end = calculate_coordinates(view_points, 0, 20)
+    line = LineString([start, end])
+    distances = {}
+    for idx, p in points.items():
+        d = line.project(p)
+        distances[idx] = d
+    return dict(sorted(distances.items(), key=lambda item: item[1]))
+
+def decompose_view_disappear(view_idx, plot=False):
+    decomposed = []
+    view = rviews[view_idx]
+    ids = rview_ids[view_idx]
+    destination = None
+    if ids[1] in regions_doors_info.keys():
+        destination = regions_doors_info[ids[1]]
+    view_line = rview_ls[view_idx]
+    vv = view_vision(view_idx)
+    points = {'end': view[1]}
+    door_signature = view_vision_signature(vv)
+    for dix in door_signature:
+        points['door {}'.format(dix)] = Point(door_points[dix].x(), door_points[dix].y())
+    landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
+    for lix in landmark_signature:
+        points['landmark {}'.format(lix)] = Point(landmarks_points[lix].x(), landmarks_points[lix].y())
+    orders = ego_order(view, points)
+    disappear_points = []
+    for key, d in orders.items():
+        if key == 'end' or (destination is not None and 'door {}'.format(destination) == key):
+            break
+        disappear_points.append(view_line.interpolate(d - disappear_shift(vid, d)))
+    if len(disappear_points) > 0:
+        rid1 = which_region(disappear_points[0])
+        decomposed = [{'ids': [ids[0], rid1], 'view': [view[0], disappear_points[0]]}]
+        for i in range(1, len(disappear_points)):
+            rid2 = which_region(disappear_points[i])
+            decomposed.append({'ids': [rid1, rid2], 'view': [disappear_points[i-1], disappear_points[i]]})
+            rid1 = rid2
+        rid2 = ids[1]
+        decomposed.append({'ids': [rid1, rid2], 'view': [disappear_points[len(disappear_points)-1], view[1]]})
+    else:
+        decomposed = [{'ids': ids, 'view': view}]
+    if plot:
+        point_dict = {'go': [], 'ro': [], 'bo': []}
+        for idx, point in points.items():
+            if idx.startswith('landmark'):
+                point_dict['go'].append(point)
+            else:
+                point_dict['ro'].append(point)
+        for point in disappear_points:
+            point_dict['bo'].append(point)
+        plot_decomposed(decomposed, point_dict)
+    return decomposed
+
+
+def plot_decomposed(decomposed, points={}):
+    path_view = []
+    for record in decomposed:
+        v = record['view']
+        path_view.append(v)
+    X = []
+    Y = []
+    U = []
+    V = []
+    for view in path_view:
+        X.append(view[0].x)
+        Y.append(view[0].y)
+        U.append(view[1].x - view[0].x)
+        V.append(view[1].y - view[0].y)
+    fig, ax = plt.subplots()
+    plt.plot(space_x, space_y, 'black')
+    for i in range(0, len(holes_x)):
+        plt.plot(holes_x[i], holes_y[i], 'r')
+    for color, ps in points.items():
+        plt.plot([p.x for p in ps], [p.y for p in ps], color)
+    ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1)
+    plt.show()
+    plt.close()
+    plt.cla()
+    plt.clf()
+
+
+def plot_all():
+    fig, ax = plt.subplots()
+    # for shp in regions_list:
+    #     s_x, s_y = save_print_geojson(list(shp.exterior.coords))
+    #     plt.plot(s_x, s_y, 'b')
+    plt.plot(space_x, space_y, 'black')
+    for i in range(0, len(holes_x)):
+        plt.plot(holes_x[i], holes_y[i], 'r')
+    X = []
+    Y = []
+    U = []
+    V = []
+    for view in rviews.values():
+        X.append(view[0].x)
+        Y.append(view[0].y)
+        U.append(view[1].x - view[0].x)
+        V.append(view[1].y - view[0].y)
+
+    plt.plot([d.x() for d in door_points], [d.y() for d in door_points], 'go')
+    plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points], 'ro')
+    ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1)
+    plt.show()
+    plt.close()
+    plt.cla()
+    plt.clf()
+
+def disappear_shift(vid, d, fov=120):
+    view_line = rview_ls[vid]
+    point = view_line.interpolate(d)
+    p1, p2 = nearest_points(view_line, point)
+    a = (90 - fov/2)/180*math.pi
+    shift = tan(a)*point.distance(p1)
+    return shift
+
+
+print('decompose views')
+decomposed_views_dict = {}
+c_views = 0
+for vid in rview_ids.keys():
+    decomposed_views_dict[vid] = decompose_view_disappear(vid)
+    c_views += len(decomposed_views_dict[vid])
+
+drviews = {}
+drview_ids = {}
+drview_ls = {}
+r_dr_mapping_ids = {}
+idx =0
+for vid_old in rview_ids.keys():
+    vals = decomposed_views_dict[vid_old]
+    r_dr_mapping_ids[vid_old] = []
+    for val in vals:
+        drview_ids[idx] = val['ids']
+        drviews[idx] = val['view']
+        drview_ls[idx] = LineString(val['view'])
+        r_dr_mapping_ids[vid_old].append(idx)
+        idx+=1
+
 from_region_ids = {}
 to_region_ids = {}
 for rvid, vals in rview_ids.items():
     if vals[0] not in from_region_ids.keys():
-        from_region_ids[vals[0]] = rvid
+        from_region_ids[vals[0]] = r_dr_mapping_ids[rvid][0]
     if vals[1] not in to_region_ids.keys():
-        to_region_ids[vals[1]] = rvid
+        to_region_ids[vals[1]] = r_dr_mapping_ids[rvid][-1]
     if len(to_region_ids) == len(signatures) and len(from_region_ids) == len(signatures):
         break
+
+print('merge unnecessary views')
 
 # constructing region view graph
 print('constructing view graph for regions')
 rviewgraph = nx.DiGraph()
-rviewgraph.add_nodes_from(list(rview_ids.keys()))
+rviewgraph.add_nodes_from(list(drview_ids.keys()))
 for vid, pids in rview_ids.items():
-    v1 = rviews[vid]
+    dviews = [drviews[i] for i in r_dr_mapping_ids[vid]]
+    dvids = [i for i in r_dr_mapping_ids[vid]]
+    v1 = dviews[len(dvids) - 1]
     dv1 = calculate_distance(v1[0], v1[1])
     for vid2, pids2 in rview_ids.items():
         if vid != vid2:
+            dviews2 = [drviews[i] for i in r_dr_mapping_ids[vid2]]
+            dvids2 = [i for i in r_dr_mapping_ids[vid2]]
+
             if pids[1] == pids2[0]: # movement
-                rviewgraph.add_edge(vid, vid2, weight=dv1)
+                rviewgraph.add_edge(dvids[len(dvids)-1], dvids2[0], weight=dv1)
             elif pids[0] == pids2[0]: # turn
-                rviewgraph.add_edge(vid, vid2, weight=0)
+                rviewgraph.add_edge(dvids[0], dvids2[0], weight=0)
+        for i in range(1, len(dvids)):
+            v0 = dviews[i-1]
+            v1 = dviews[i]
+            dv0 = calculate_distance(v0[0], v0[1])
+            rviewgraph.add_edge(dvids[i-1], dvids[i], weight=dv0)
+
+rview_ids = drview_ids
+rviews = drviews
+rview_ls = drview_ls
+
 
 def shortest_path_regions(rid1, rid2):
     regions_set = {rid1, rid2}
@@ -698,6 +908,87 @@ def plot_shp(shp, point=False):
     plt.cla()
     plt.clf()
 
+def demo_vision(vid):
+    vv = view_vision(vid)
+    ids = rview_ids[vid]
+    decompose_view_disappear(vid, True)
+    centroid = regions_info[ids[0]]
+    iso = isovist_calc(centroid.x, centroid.y)
+    plot_shp(iso)
+    plot_shp(vv, point=True)
+    print('signature: {}'.format(view_vision_signature(vv)))
+
+# problems:
+    # zig-zag views when we consider region-to-region views
+        # impact the shortest paths -> going back
+    # decompose long views (that intersect multiple visibility regions)
+    # reduce the number of nodes (and edges)
+        # views -- unique visible information -- egocentric view (project to the line itself)
+        # field of view: (should be applied to significantly reduce the number of nodes)
+        # algorithmic design for graph pruning
+    # pruning based on the triangles ...
+
+# :
+    # meaningless regions -- agent's space
+    # meaningless region connections --> moving towards a less important region? (?)
+    # adding landmarks for capturing spatial information about the environment:
+        # egocentric
+        # alocentric
+        # cardinal
+        # order
+    # compare views based on their information
+
+def calculate_spatial_relationships(vid):
+    vv = view_vision(vid)
+    door_signature = view_vision_signature(vv)
+    print(door_signature)
+    landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
+    print(landmark_signature)
+
+    view_points = rviews[vid]
+    points = {}
+    for d in door_signature:
+        d_point = door_points[d]
+        points['door {}'.format(d)] = Point(d_point.x(), d_point.y())
+    for l in landmark_signature:
+        l_point = landmarks_points[l]
+        points['landmark {}'.format((l))] = Point(l_point.x(), l_point.y())
+    ego_rels = egocentric_relationships(view_points, points)
+    return ego_rels
+
+
+def ego_dir(a, b, c):
+    det = ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+    if det > 0:
+        return 'on the left'
+    elif det == 0:
+        return 'in the front'
+    else:
+        return 'on the right'
+
+
+def egocentric_relationships(view_points, points):
+    dirs = {}
+    lefts = {}
+    rights = {}
+    for idx, p in points.items():
+        dir_rel = ego_dir(view_points[0], view_points[1], p)
+        if dir_rel == 'on the left':
+            lefts[idx] = p
+        elif dir_rel == 'on the right':
+            rights[idx] = p
+        dirs[idx] = {'dir': dir_rel, 'order': None}
+    left_orders = ego_order(view_points, lefts)
+    right_orders = ego_order(view_points, rights)
+    counter = 1
+    for k,v in left_orders.items():
+        dirs[k]['order'] = counter
+        counter += 1
+    counter = 1
+    for k,v in right_orders.items():
+        dirs[k]['order'] = counter
+        counter += 1
+    return dirs
 
 def demo(object_based=test, region_based=test_regions):
     if object_based:
@@ -763,193 +1054,3 @@ def demo(object_based=test, region_based=test_regions):
         plot_region(870)
         plot_region(3944)
         shortest_path_regions(870, 3944)
-
-
-def vision_triangle(view_id, fov=120):
-    v = rviews[view_id]
-    p1 = v[0]
-    p2 = calculate_coordinates(v=v, angle=fov/2, d=50)
-    p3 = calculate_coordinates(v=v, angle=-fov/2, d=50)
-    return Poly([[p.x, p.y] for p in [p1, p2, p3]])
-
-def isovist_calc(x, y):
-    door = vis.Point(x,y)
-    door.snap_to_boundary_of(env, epsilon)
-    door.snap_to_vertices_of(env, epsilon)
-    isovist = vis.Visibility_Polygon(door, env, epsilon)
-    iso_x, iso_y = save_print(isovist)
-    geojson_polygon = to_polygon_geojson(iso_x, iso_y)
-    shp = to_polygon_shape(geojson_polygon, clip=True)
-    if not shp.is_valid:
-        print('invalid')
-    if isinstance(shp, MultiPolygon):
-        test_case = shp
-        shps = list(shp)
-        areas = [s.area for s in shps]
-        max_area = max(areas)
-        idxs = areas.index(max_area)
-        shp = shps[idxs]
-        test_idx = idx
-    return shp
-
-def view_vision(view_idx, fov=120, is_start=True, isovist_view=None):
-    triangle = vision_triangle(view_idx, fov)
-    view_line = rview_ls[view_idx]
-    if isovist_view is None:
-        if is_start:
-            x = view_line.xy[0][0]
-            y = view_line.xy[1][0]
-        else:
-            x = view_line.xy[0][1]
-            y = view_line.xy[1][1]
-        isovist_view = isovist_calc(x, y)
-    return isovist_view.intersection(triangle)
-
-def view_vision_signature(view_coverage, door_points=door_points):
-    signature = []
-    for idx, p in enumerate(door_points):
-        if view_coverage.contains(Point(p.x(), p.y())) or view_coverage.touches(Point(p.x(), p.y())):
-            signature.append(idx)
-    return signature
-
-def decompose_view(view_idx):
-    view_line = rview_ls[view_idx]
-    decomposed_views = []
-    start_coverage = view_vision(view_idx)
-    start_signature = view_vision_signature(start_coverage)
-    end_coverage = view_vision(view_line, is_start=False)
-    end_signature = view_vision_signature(end_coverage)
-    if start_coverage != end_coverage:
-        pass   # todo
-
-    return decomposed_views
-
-def decompose_view_disappear(view_idx):
-    decomposed = []
-    view = rviews[view_idx]
-    ids = rview_ids[view_idx]
-    destination = None
-    if ids[1] in regions_doors_info.keys():
-        destination = regions_doors_info[ids[1]]
-    view_line = rview_ls[view_idx]
-    vv = view_vision(view_idx)
-    # line= calculate_coordinates(view, 270, 20)
-    # todo calculate line intersection based on fov (270 if 120)
-    points = {'end': view[1]}
-    door_signature = view_vision_signature(vv)
-    for dix in door_signature:
-        points['door {}'.format(dix)] = Point(door_points[dix].x(), door_points[dix].y())
-    landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
-    for lix in landmark_signature:
-        points['landmark {}'.format(lix)] = Point(landmarks_points[lix].x(), landmarks_points[lix].y())
-    orders = ego_order(view, points)
-    disappear_points = {}
-    for key, d in orders.items():
-        if key == 'end' or (destination is not None and 'door {}'.format(destination) == key):
-            break
-        disappear_points[key] = view_line.interpolate(d - disappear_shift(vid, d))
-    return disappear_points
-
-
-def disappear_shift(vid, d, fov=120):
-    view_line = rview_ls[vid]
-    point = view_line.interpolate(d)
-    p1, p2 = nearest_points(view_line, point)
-    a = (90 - fov/2)/180*math.pi
-    shift = tan(a)*point.distance(p1)
-    return shift
-
-
-def demo_vision(vid):
-    vv = view_vision(vid)
-    ids = rview_ids[vid]
-    shortest_path_regions(ids[0], ids[1])
-    centroid = regions_info[ids[0]]
-    iso = isovist_calc(centroid.x, centroid.y)
-    plot_shp(iso)
-    plot_shp(vv, point=True)
-    print('signature: {}'.format(view_vision_signature(vv)))
-
-
-# problems:
-    # zig-zag views when we consider region-to-region views
-        # impact the shortest paths -> going back
-    # decompose long views (that intersect multiple visibility regions)
-    # reduce the number of nodes (and edges)
-        # views -- unique visible information -- egocentric view (project to the line itself)
-        # field of view: (should be applied to significantly reduce the number of nodes)
-        # algorithmic design for graph pruning
-    # pruning based on the triangles ...
-
-# :
-    # meaningless regions -- agent's space
-    # meaningless region connections --> moving towards a less important region? (?)
-    # adding landmarks for capturing spatial information about the environment:
-        # egocentric
-        # alocentric
-        # cardinal
-        # order
-    # compare views based on their information
-
-def calculate_spatial_relationships(vid):
-    vv = view_vision(vid)
-    door_signature = view_vision_signature(vv)
-    print(door_signature)
-    landmark_signature = view_vision_signature(vv, door_points=landmarks_points)
-    print(landmark_signature)
-
-    view_points = rviews[vid]
-    points = {}
-    for d in door_signature:
-        d_point = door_points[d]
-        points['door {}'.format(d)] = Point(d_point.x(), d_point.y())
-    for l in landmark_signature:
-        l_point = landmarks_points[l]
-        points['landmark {}'.format((l))] = Point(l_point.x(), l_point.y())
-    ego_rels = egocentric_relationships(view_points, points)
-    return ego_rels
-
-
-def ego_dir(a, b, c):
-    det = ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
-    if det > 0:
-        return 'on the left'
-    elif det == 0:
-        return 'in the front'
-    else:
-        return 'on the right'
-
-
-def ego_order(view_points, points):
-    start = view_points[0]
-    end = calculate_coordinates(view_points, 0, 20)
-    line = LineString([start, end])
-    distances = {}
-    for idx, p in points.items():
-        d = line.project(p)
-        distances[idx] = d
-    return dict(sorted(distances.items(), key=lambda item: item[1]))
-
-
-def egocentric_relationships(view_points, points):
-    dirs = {}
-    lefts = {}
-    rights = {}
-    for idx, p in points.items():
-        dir_rel = ego_dir(view_points[0], view_points[1], p)
-        if dir_rel == 'on the left':
-            lefts[idx] = p
-        elif dir_rel == 'on the right':
-            rights[idx] = p
-        dirs[idx] = {'dir': dir_rel, 'order': None}
-    left_orders = ego_order(view_points, lefts)
-    right_orders = ego_order(view_points, rights)
-    counter = 1
-    for k,v in left_orders.items():
-        dirs[k]['order'] = counter
-        counter += 1
-    counter = 1
-    for k,v in right_orders.items():
-        dirs[k]['order'] = counter
-        counter += 1
-    return dirs
