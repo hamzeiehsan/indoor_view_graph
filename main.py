@@ -1095,3 +1095,7 @@ def demo(start=31, dest=8):
         print('view: {0}, from {1} - to {2}'.format(v, rview_ids[v][0], rview_ids[v][1]))
         print(calculate_spatial_relationships(v))
         print('\n')
+
+    input("Press Enter to continue...")
+    print('plot all views')
+    plot_all()
