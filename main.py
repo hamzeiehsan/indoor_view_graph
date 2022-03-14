@@ -16,19 +16,19 @@ from shapely.geometry import Polygon as Poly
 from shapely.geometry import shape, Point, LineString, MultiPolygon, LinearRing, MultiLineString, GeometryCollection
 from shapely.ops import unary_union, polygonize, nearest_points
 
-# address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
-# polygon_file = 'study_area_all.geojson'
-# holes_file = 'study_area_holes.geojson'
-# doors_file = 'study_doors.geojson'
-# dpoint_file = 'study_area_dpoints.geojson'
-address = 'envs/hypo/'
-polygon_file = 'hypo_env.geojson'
-holes_file = 'hypo_holes.geojson'
-doors_file = 'hypo_doors.geojson'
-landmarks = 'hypo_landmarks.geojson'
-
-test = False
-test_regions = True
+test = True
+address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
+polygon_file = 'study_area_all.geojson'
+holes_file = 'study_area_holes.geojson'
+doors_file = 'study_doors.geojson'
+dpoint_file = 'study_area_dpoints.geojson'
+landmarks = 'study_area_landmarks.geojson'
+if test:
+    address = 'envs/hypo/'
+    polygon_file = 'hypo_env.geojson'
+    holes_file = 'hypo_holes.geojson'
+    doors_file = 'hypo_doors.geojson'
+    landmarks = 'hypo_landmarks.geojson'
 
 
 def read_geojson(address, file):
@@ -149,7 +149,8 @@ print('reading GeoJSON files (boundary, holes, doors and decision points)')
 boundary = read_geojson(address, polygon_file)['features'][0]['geometry']['coordinates'][0][0]
 holes = read_geojson(address, holes_file)['features']
 doors = read_geojson(address, doors_file)['features']
-# dpoints = read_geojson(address, dpoint_file)['features']
+if not test:
+    dpoints = read_geojson(address, dpoint_file)['features']
 landmarks = read_geojson(address, landmarks)['features']
 
 space_poly = reformat_polygon(boundary, is_hole=False)
@@ -173,8 +174,9 @@ door_points = []
 for d in doors:
     door_points.append(reformat_point(d['geometry']['coordinates']))
 door_idx = len(door_points)
-# for d in dpoints:
-#     door_points.append(reformat_point(d['geometry']['coordinates']))
+if not test:
+    for d in dpoints:
+        door_points.append(reformat_point(d['geometry']['coordinates']))
 landmarks_points = []
 for l in landmarks:
     landmarks_points.append(reformat_point(l['geometry']['coordinates']))
@@ -201,7 +203,7 @@ shapes = {}
 idx = 0
 test_case = None
 test_idx = None
-for isovist in isovists:  #
+for isovist in isovists:
     iso_x, iso_y = save_print(isovist)
     geojson_polygon = to_polygon_geojson(iso_x, iso_y)
     shp = to_polygon_shape(geojson_polygon, clip=True)
@@ -217,10 +219,6 @@ for isovist in isovists:  #
         test_idx = idx
     shapes[idx] = {'shape': shp, 'props': door_props[idx]}
 
-    # iso_x, iso_y = save_print_geojson(list(shp.exterior.coords))
-    # iso_x.append(isovist[0].x())
-    # iso_y.append(isovist[0].y())
-
     geojson_polygon = to_polygon_geojson(iso_x, iso_y)
     features.append(Feature(geometry=geojson_polygon, properties=door_props[idx]))
 
@@ -228,21 +226,6 @@ for isovist in isovists:  #
     idx += 1
 
 feature_collection = FeatureCollection(features)
-# counter = 0
-# for x_y in isovists_x_y:
-#     vantage_point = door_points[counter]
-#     plt.plot(space_x, space_y, 'black')
-#     plt.plot(x_y[0], x_y[1])
-#     for i in range(0, len(holes_x)):
-#         plt.plot(holes_x[i], holes_y[i], 'r')
-#
-#     plt.plot([vantage_point.x()], [vantage_point.y()], 'go')
-#     plt.axis('equal')
-#     plt.savefig('img/isovist-{0}-{1}.pdf'.format(counter, door_props[counter]['type']))
-#     plt.close()
-#     plt.cla()
-#     plt.clf()
-#     counter += 1
 
 views = {}
 view_ids = {}
@@ -263,6 +246,8 @@ for i in range(0, len(holes_x)):
     plt.plot(holes_x[i], holes_y[i], 'r')
 for d in door_points:
     plt.plot([d.x()], [d.y()], 'go')
+for l in landmarks_points:
+    plt.plot([l.x()], [l.y()], 'ro')
 plt.show()
 plt.close()
 plt.cla()
@@ -388,7 +373,7 @@ overlay_regions = list(polygonize(unary_union(list(x.exterior for x in shapes_li
 gdf = gpd.GeoDataFrame(geometry=overlay_regions)
 regions_list = list(gdf['geometry'])
 regions_area = [r.area for r in regions_list]
-regions_list = [r for (idx, r) in enumerate(regions_list) if regions_area[idx] > 0.0000001]
+# regions_list = [r for (idx, r) in enumerate(regions_list) if regions_area[idx] > 0.0000001]
 holes_centroids = []
 for idx, holex in enumerate(holes_x):
     holey = holes_y[idx]
@@ -503,7 +488,6 @@ for idx, signature in enumerate(signatures):
     # based on signature --> direct access (reach)
     block = None
     neighbours = adjacency_matrix[idx]
-
     for rid, pids in regions_doors_info.items():
         for pid in pids:
             if rid != idx and pid in signature and rid not in neighbours:
@@ -526,6 +510,19 @@ for idx, signature in enumerate(signatures):
                         rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
                         rview_ls[counter] = view_line
                 counter += 1
+
+    if idx in regions_doors_info.keys() and len(regions_doors_info[idx]) > 1:
+        pids = regions_doors_info[idx]
+        for pid1 in pids:
+            for pid2 in pids:
+                if pid1 != pid2:
+                    view_line = LineString([Point(door_points[pid1].x(), door_points[pid1].y()),
+                                            Point(door_points[pid2].x(), door_points[pid2].y())])
+                    rviews[counter] = [Point(door_points[pid1].x(), door_points[pid1].y()),
+                                       Point(door_points[pid2].x(), door_points[pid2].y())]
+                    rview_ids[counter] = [idx, idx]
+                    rview_ls[counter] = view_line
+                    counter += 1
 
     # based on adjacent regions --> access to new information toward a visible object (orient)
     for neighbour in neighbours:
@@ -1001,7 +998,6 @@ def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, region
     if regions:
         viewgraph = rviewgraph
         view_ids = rview_ids
-        views_ls = rview_ls
         views = rviews
     chosen_view = views[vid]
     all_views = []
@@ -1076,7 +1072,7 @@ def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, region
     plt.clf()
 
 
-def demo(start=31, dest=8):
+def demo(start=8, dest=43):
     input("Start testing the region graph\nPress Enter to continue...")
     print('Source: Region {}'.format(start))
     plot_region(start)
