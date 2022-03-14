@@ -363,6 +363,15 @@ def view_intersects_holes(view_ls):
             return True
     return False
 
+def view_intersects_boundary(view_ls):
+    if space_shp.intersects(view_ls):
+        if space_shp.contains(view_ls):
+            return False
+        elif space_shp.touches(view_ls) and space_shp.contains(view_ls.centroid):
+            return False
+        return True
+    return False
+
 
 def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False):
     chosen_view = views[vid]
@@ -549,7 +558,9 @@ for pid, door in enumerate(door_points):
     dpoint = Point(door.x(), door.y())
     for rid, r in enumerate(regions_list):
         if r.contains(dpoint) or dpoint.touches(r):
-            regions_doors_info[rid] = pid
+            if rid not in regions_doors_info.keys():
+                regions_doors_info[rid] = []
+            regions_doors_info[rid].append(pid)
 
 rview_ids = {}
 rviews = {}
@@ -560,26 +571,33 @@ for idx, signature in enumerate(signatures):
     block = None
     neighbours = adjacency_matrix[idx]
 
-    for rid, pid in regions_doors_info.items():
-        if rid != idx and pid in signature and rid not in neighbours:
-            rview_ids[counter] = [idx, rid]
-            view_line = LineString([regions_info[idx], regions_info[rid]])
-            if view_intersects_holes(view_line):
-                rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
-                rview_ls[counter] = LineString([regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
-            else:
-                rviews[counter] = [regions_info[idx], regions_info[rid]]
-                rview_ls[counter] = view_line
-                counter += 1
+    for rid, pids in regions_doors_info.items():
+        for pid in pids:
+            if rid != idx and pid in signature and rid not in neighbours:
+                view_line = LineString([regions_info[idx], regions_info[rid]])
+                if view_intersects_boundary(view_line):
+                    continue
                 rview_ids[counter] = [idx, rid]
-                rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
-                rview_ls[counter] = LineString([regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
-            counter += 1
+                if view_intersects_holes(view_line):
+                    rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
+                    rview_ls[counter] = LineString(
+                        [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
+                else:
+                    rviews[counter] = [regions_info[idx], regions_info[rid]]
+                    rview_ls[counter] = view_line
+                    counter += 1
+                    rview_ids[counter] = [idx, rid]
+                    rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
+                    rview_ls[counter] = LineString(
+                        [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
+                counter += 1
 
     # based on adjacent regions --> access to new information toward a visible object (orient)
     for neighbour in neighbours:
-        rview_ids[counter] = [idx, neighbour]
         view_line = LineString([regions_info[idx], regions_info[neighbour]])
+        if view_intersects_boundary(view_line):
+            continue
+        rview_ids[counter] = [idx, neighbour]
         if view_intersects_holes(view_line):
             pol_ext = LinearRing(regions_list[neighbour].exterior.coords)
             d = pol_ext.project(regions_info[idx])
@@ -594,11 +612,11 @@ for idx, signature in enumerate(signatures):
             rviews[counter] = [regions_info[idx], regions_info[neighbour]]
             rview_ls[counter] = view_line
         if neighbour in regions_doors_info.keys():
-            pid = regions_doors_info[neighbour]
-            counter += 1
-            rview_ids[counter] = [idx, neighbour]
-            rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
-            rview_ls[counter] = LineString([regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
+            for pid in regions_doors_info[neighbour]:
+                counter += 1
+                rview_ids[counter] = [idx, neighbour]
+                rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
+                rview_ls[counter] = LineString([regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
         counter+=1
 
 def which_region(point):
@@ -668,9 +686,9 @@ def decompose_view_disappear(view_idx, plot=False):
     decomposed = []
     view = rviews[view_idx]
     ids = rview_ids[view_idx]
-    destination = None
+    destinations = []
     if ids[1] in regions_doors_info.keys():
-        destination = regions_doors_info[ids[1]]
+        destinations = regions_doors_info[ids[1]]
     view_line = rview_ls[view_idx]
     vv = view_vision(view_idx)
     points = {'end': view[1]}
@@ -683,8 +701,11 @@ def decompose_view_disappear(view_idx, plot=False):
     orders = ego_order(view, points)
     disappear_points = []
     for key, d in orders.items():
-        if key == 'end' or (destination is not None and 'door {}'.format(destination) == key):
+        if key == 'end':
             break
+        for destination in destinations:
+            if destination is not None and 'door {}'.format(destination) == key:
+                break
         disappear_points.append(view_line.interpolate(d - disappear_shift(vid, d)))
     if len(disappear_points) > 0:
         rid1 = which_region(disappear_points[0])
