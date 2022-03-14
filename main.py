@@ -570,10 +570,13 @@ for idx, signature in enumerate(signatures):
             else:
                 rviews[counter] = [regions_info[idx], regions_info[rid]]
                 rview_ls[counter] = view_line
+                counter += 1
+                rview_ids[counter] = [idx, rid]
+                rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
+                rview_ls[counter] = LineString([regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
             counter += 1
 
     # based on adjacent regions --> access to new information toward a visible object (orient)
-
     for neighbour in neighbours:
         rview_ids[counter] = [idx, neighbour]
         view_line = LineString([regions_info[idx], regions_info[neighbour]])
@@ -583,9 +586,19 @@ for idx, signature in enumerate(signatures):
             neighbour_point = pol_ext.interpolate(d)
             rviews[counter] = [regions_info[idx], neighbour_point]
             rview_ls[counter] = LineString([regions_info[idx], neighbour_point])
+            counter+= 1
+            rview_ids[counter] = [idx, neighbour]
+            rviews[counter] = [neighbour_point, regions_info[neighbour]]
+            rview_ls[counter] = LineString([neighbour_point, regions_info[neighbour]])
         else:
             rviews[counter] = [regions_info[idx], regions_info[neighbour]]
             rview_ls[counter] = view_line
+        if neighbour in regions_doors_info.keys():
+            pid = regions_doors_info[neighbour]
+            counter += 1
+            rview_ids[counter] = [idx, neighbour]
+            rviews[counter] = [regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())]
+            rview_ls[counter] = LineString([regions_info[idx], Point(door_points[pid].x(), door_points[pid].y())])
         counter+=1
 
 def which_region(point):
