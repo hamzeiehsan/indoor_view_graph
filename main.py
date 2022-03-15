@@ -1032,6 +1032,25 @@ def check_duplicate_views():
                 print('duplicate info {0} - {1}: {2}'.format(vid1, vid2, srel1))
     return duplicates
 
+def check_duplicate_validity(dups):
+    duplicates = {}
+    # sort
+    for key, vals in dups.items():
+        max_vl = rview_ls[key]
+        max_key = key
+        for v in vals:
+            if rview_ls[v].length >= max_vl.length:
+                max_vl = rview_ls[v]
+                max_key = v
+        if key == max_key:
+            duplicates[key] = vals
+        else:
+            duplicates[max_key] = [key]
+            for v in vals:
+                if v != max_key:
+                    duplicates[max_key].append(v)
+    return duplicates
+
 
 def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, regions=True):
     if regions:
@@ -1188,4 +1207,6 @@ def demo(start=8, dest=43):
 
     input("Press Enter to continue...")
     print('plot duplicate views')
-    plot_duplicates(dups=check_duplicate_views())
+    dups = check_duplicate_views()
+    duplicates = check_duplicate_validity(dups)
+    plot_duplicates(duplicates)
