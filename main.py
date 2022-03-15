@@ -16,7 +16,7 @@ from shapely.geometry import Polygon as Poly
 from shapely.geometry import shape, Point, LineString, MultiPolygon, LinearRing, MultiLineString, GeometryCollection
 from shapely.ops import unary_union, polygonize, nearest_points
 
-basic_test = False
+basic_test = True
 test = True
 address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
 polygon_file = 'study_area_all.geojson'
@@ -669,7 +669,7 @@ def decompose_view_disappear(view_idx, plot=False):
         for destination in destinations:
             if destination is not None and 'door {}'.format(destination) == key:
                 break
-        disappear_points.append(view_line.interpolate(d - disappear_shift(vid, d)))
+        disappear_points.append(view_line.interpolate(d - disappear_shift(vid, d) + epsilon))
     if len(disappear_points) > 0:
         rid1 = which_region(disappear_points[0])
         decomposed = [{'ids': [ids[0], rid1], 'view': [view[0], disappear_points[0]]}]
