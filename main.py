@@ -16,6 +16,7 @@ from shapely.geometry import Polygon as Poly
 from shapely.geometry import shape, Point, LineString, MultiPolygon, LinearRing, MultiLineString, GeometryCollection
 from shapely.ops import unary_union, polygonize, nearest_points
 
+basic_test = False
 test = True
 address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
 polygon_file = 'study_area_all.geojson'
@@ -23,12 +24,18 @@ holes_file = 'study_area_holes.geojson'
 doors_file = 'study_doors.geojson'
 dpoint_file = 'study_area_dpoints.geojson'
 landmarks = 'study_area_landmarks.geojson'
-if test:
+if test and not basic_test:
     address = 'envs/hypo/'
     polygon_file = 'hypo_env.geojson'
     holes_file = 'hypo_holes.geojson'
     doors_file = 'hypo_doors.geojson'
     landmarks = 'hypo_landmarks.geojson'
+
+if basic_test:
+    address = 'envs/basic/'
+    polygon_file = 't_bound.geojson'
+    doors_file = 't_doors.geojson'
+    landmarks = 't_landmarks.geojson'
 
 
 def read_geojson(address, file):
@@ -147,7 +154,10 @@ def calculate_angle(p1, p2, p3):
 epsilon = 0.000001
 print('reading GeoJSON files (boundary, holes, doors and decision points)')
 boundary = read_geojson(address, polygon_file)['features'][0]['geometry']['coordinates'][0][0]
-holes = read_geojson(address, holes_file)['features']
+if basic_test:
+    holes = []
+else:
+    holes = read_geojson(address, holes_file)['features']
 doors = read_geojson(address, doors_file)['features']
 if not test:
     dpoints = read_geojson(address, dpoint_file)['features']
@@ -244,10 +254,11 @@ fig, ax = plt.subplots()
 plt.plot(space_x, space_y, 'black')
 for i in range(0, len(holes_x)):
     plt.plot(holes_x[i], holes_y[i], 'r')
-for d in door_points:
-    plt.plot([d.x()], [d.y()], 'go')
-for l in landmarks_points:
-    plt.plot([l.x()], [l.y()], 'ro')
+plt.plot([d.x() for d in door_points], [d.y() for d in door_points],
+         'go', label='gateways')
+plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points],
+         'ro', label='landmarks')
+plt.legend()
 plt.show()
 plt.close()
 plt.cla()
@@ -511,14 +522,24 @@ for idx, signature in enumerate(signatures):
                         rview_ls[counter] = view_line
                 counter += 1
 
-    if idx in regions_doors_info.keys() and len(regions_doors_info[idx]) > 1:
+    if idx in regions_doors_info.keys() and len(regions_doors_info[idx]) > 0:
         pids = regions_doors_info[idx]
+        centroid = regions_info[idx]
         for pid1 in pids:
+            point1 = Point(door_points[pid1].x(), door_points[pid1].y())
+            rviews[counter] = [centroid, point1]
+            rview_ids[counter] = [idx, idx]
+            rview_ls[counter] = LineString([centroid, point1])
+            counter += 1
+            rviews[counter] = [point1, centroid]
+            rview_ids[counter] = [idx, idx]
+            rview_ls[counter] = LineString([point1, centroid])
+            counter += 1
             for pid2 in pids:
                 if pid1 != pid2:
-                    view_line = LineString([Point(door_points[pid1].x(), door_points[pid1].y()),
+                    view_line = LineString([point1,
                                             Point(door_points[pid2].x(), door_points[pid2].y())])
-                    rviews[counter] = [Point(door_points[pid1].x(), door_points[pid1].y()),
+                    rviews[counter] = [point1,
                                        Point(door_points[pid2].x(), door_points[pid2].y())]
                     rview_ids[counter] = [idx, idx]
                     rview_ls[counter] = view_line
@@ -648,7 +669,7 @@ def decompose_view_disappear(view_idx, plot=False):
         for destination in destinations:
             if destination is not None and 'door {}'.format(destination) == key:
                 break
-        disappear_points.append(view_line.interpolate(d - disappear_shift(vid, d)))
+        disappear_points.append(view_line.interpolate(d + disappear_shift(vid, d)))
     if len(disappear_points) > 0:
         rid1 = which_region(disappear_points[0])
         decomposed = [{'ids': [ids[0], rid1], 'view': [view[0], disappear_points[0]]}]
@@ -700,27 +721,36 @@ def plot_decomposed(decomposed, points={}):
     plt.clf()
 
 
-def plot_all():
+def plot_all(all_regions=True, all_views=True):
     fig, ax = plt.subplots()
-    # for shp in regions_list:
-    #     s_x, s_y = save_print_geojson(list(shp.exterior.coords))
-    #     plt.plot(s_x, s_y, 'b')
+    s_xs = []
+    s_ys = []
     plt.plot(space_x, space_y, 'black')
+    if all_regions:
+        for shp in regions_list:
+            s_x, s_y = save_print_geojson(list(shp.exterior.coords))
+            s_xs.extend(s_x)
+            s_ys.extend(s_y)
+        plt.plot(s_xs, s_ys, 'b:', label='regions')
+
     for i in range(0, len(holes_x)):
         plt.plot(holes_x[i], holes_y[i], 'r')
-    X = []
-    Y = []
-    U = []
-    V = []
-    for view in rviews.values():
-        X.append(view[0].x)
-        Y.append(view[0].y)
-        U.append(view[1].x - view[0].x)
-        V.append(view[1].y - view[0].y)
 
-    plt.plot([d.x() for d in door_points], [d.y() for d in door_points], 'go')
-    plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points], 'ro')
-    ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1)
+    plt.plot([d.x() for d in door_points], [d.y() for d in door_points], 'go', label='gateways')
+    plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points], 'ro', label='landmarks')
+
+    if all_views:
+        X = []
+        Y = []
+        U = []
+        V = []
+        for view in rviews.values():
+            X.append(view[0].x)
+            Y.append(view[0].y)
+            U.append(view[1].x - view[0].x)
+            V.append(view[1].y - view[0].y)
+        ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1, label='views')
+    plt.legend()
     plt.show()
     plt.close()
     plt.cla()
@@ -785,9 +815,11 @@ for vid, pids in rview_ids.items():
             dvids2 = [i for i in r_dr_mapping_ids[vid2]]
 
             if pids[1] == pids2[0]:  # movement
-                rviewgraph.add_edge(dvids[len(dvids) - 1], dvids2[0], weight=dv1)
+                if rviews[vid][1].distance(rviews[vid2][0]) < epsilon:
+                    rviewgraph.add_edge(dvids[len(dvids) - 1], dvids2[0], weight=dv1)
             elif pids[0] == pids2[0]:  # turn
-                rviewgraph.add_edge(dvids[0], dvids2[0], weight=0)
+                if rviews[vid][0].distance(rviews[vid2][0]) < epsilon:
+                    rviewgraph.add_edge(dvids[0], dvids2[0], weight=0)
         for i in range(1, len(dvids)):
             v0 = dviews[i - 1]
             v1 = dviews[i]
@@ -1073,6 +1105,9 @@ def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, region
 
 
 def demo(start=8, dest=43):
+    if basic_test:
+        start = 0
+        dest = 4
     input("Start testing the region graph\nPress Enter to continue...")
     print('Source: Region {}'.format(start))
     plot_region(start)
@@ -1094,4 +1129,4 @@ def demo(start=8, dest=43):
 
     input("Press Enter to continue...")
     print('plot all views')
-    plot_all()
+    plot_all(False, True)

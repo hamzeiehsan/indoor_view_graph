@@ -1,0 +1,11 @@
+{
+"type": "FeatureCollection",
+"name": "t_doors",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": null }, "geometry": { "type": "Point", "coordinates": [ 145.025503347408687, -37.806174851690045 ] } },
+{ "type": "Feature", "properties": { "id": null }, "geometry": { "type": "Point", "coordinates": [ 145.035631944810348, -37.832107553658048 ] } },
+{ "type": "Feature", "properties": { "id": null }, "geometry": { "type": "Point", "coordinates": [ 145.068986463839877, -37.822066271751247 ] } },
+{ "type": "Feature", "properties": { "id": null }, "geometry": { "type": "Point", "coordinates": [ 145.031464335472208, -37.822067062622367 ] } }
+]
+}
