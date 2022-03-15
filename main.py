@@ -1017,13 +1017,20 @@ def is_same_info(rel1, rel2):
 
 
 def check_duplicate_views():
+    duplicates = {}
+    already_in_duplicates = []
     srelations = {}
     for vid in rview_ids.keys():
         srelations[vid] = calculate_spatial_relationships(vid)
     for vid1, srel1 in srelations.items():
         for vid2, srel2 in srelations.items():
-            if vid1 != vid2 and is_same_info(srel1, srel2):
+            if vid1 != vid2 and vid1 not in already_in_duplicates and is_same_info(srel1, srel2):
+                if vid1 not in duplicates.keys():
+                    duplicates[vid1] = []
+                duplicates[vid1].append(vid2)
+                already_in_duplicates.append(vid2)
                 print('duplicate info {0} - {1}: {2}'.format(vid1, vid2, srel1))
+    return duplicates
 
 
 def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, regions=True):
