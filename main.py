@@ -669,7 +669,7 @@ def decompose_view_disappear(view_idx, plot=False):
         for destination in destinations:
             if destination is not None and 'door {}'.format(destination) == key:
                 break
-        disappear_points.append(view_line.interpolate(d + disappear_shift(vid, d)))
+        disappear_points.append(view_line.interpolate(d - disappear_shift(vid, d)))
     if len(disappear_points) > 0:
         rid1 = which_region(disappear_points[0])
         decomposed = [{'ids': [ids[0], rid1], 'view': [view[0], disappear_points[0]]}]
@@ -1110,6 +1110,54 @@ def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, region
     plt.cla()
     plt.clf()
 
+def plot_duplicates(dups):
+    fig, ax = plt.subplots()
+    plt.plot(space_x, space_y, 'black')
+    for i in range(0, len(holes_x)):
+        plt.plot(holes_x[i], holes_y[i], 'r')
+
+    plt.plot([d.x() for d in door_points], [d.y() for d in door_points], 'go', label='gateways')
+    plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points], 'ro', label='landmarks')
+    X = []
+    Y = []
+    U = []
+    V = []
+    Xd = []
+    Yd = []
+    Ud = []
+    Vd = []
+    Xn = []
+    Yn = []
+    Un = []
+    Vn = []
+    dup_vals = []
+    for dvs in dups.values():
+        dup_vals.extend(dvs)
+    for vid, view in rviews.items():
+        if vid in dups.keys():
+            X.append(view[0].x)
+            Y.append(view[0].y)
+            U.append(view[1].x - view[0].x)
+            V.append(view[1].y - view[0].y)
+        elif vid in dup_vals:
+            Xd.append(view[0].x)
+            Yd.append(view[0].y)
+            Ud.append(view[1].x - view[0].x)
+            Vd.append(view[1].y - view[0].y)
+        else:
+            Xn.append(view[0].x)
+            Yn.append(view[0].y)
+            Un.append(view[1].x - view[0].x)
+            Vn.append(view[1].y - view[0].y)
+
+    ax.quiver(Xn, Yn, Un, Vn, angles='xy', scale_units='xy', scale=1, label='unique')
+    ax.quiver(Xd, Yd, Ud, Vd, angles='xy', scale_units='xy', scale=1, label='duplicates', color='r')
+    ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1, label='not unique', color='b')
+    plt.legend()
+    plt.show()
+    plt.close()
+    plt.cla()
+    plt.clf()
 
 def demo(start=8, dest=43):
     if basic_test:
@@ -1137,3 +1185,7 @@ def demo(start=8, dest=43):
     input("Press Enter to continue...")
     print('plot all views')
     plot_all(False, True)
+
+    input("Press Enter to continue...")
+    print('plot duplicate views')
+    plot_duplicates(dups=check_duplicate_views())
