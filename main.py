@@ -1009,7 +1009,7 @@ def is_same_info(rel1, rel2):
     if len(rel1) != len(rel2):
         return False
     for key1, val1 in rel1.items():
-        if key1 not in rel2.items():
+        if key1 not in rel2.keys():
             return False
         elif rel2[key1] != rel1[key1]:
             return False
