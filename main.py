@@ -1174,6 +1174,9 @@ def demo(start=8, dest=43):
         print('view: {0}, from {1} - to {2}'.format(v, rview_ids[v][0], rview_ids[v][1]))
         print(calculate_spatial_relationships(v))
         print('\n')
+    if not basic_test:
+        input("Plot view: {}. Press Enter to continue...".format(50))
+        demo_vision(50)
 
     input("Plot all views. Press Enter to continue...")
     plot_all(False, True)
@@ -1189,20 +1192,21 @@ def demo(start=8, dest=43):
 # algorithmic design for graph pruning -- remove duplicate views before graph construction preserve movement continuity
 
 # Spatial information:
-# egocentric (done)
-# order
-# allocentric
-# cardinal (?)
-# topological
+    # egocentric (done)
+    # order (done)
+    # allocentric
+    # cardinal (?)
+    # topological
 
 # Label edges:
-# turn
-# movement (different grammars)
+    # turn
+    # movement (different grammars)
 
-# Generating route descriptions for the shortest path
+# Demonstration: Generating route descriptions for the shortest path
 
 # future works:
-# 2D to 3D + access (visibility vs. access)
-# mapping route descriptions to route trajectory (series of connected views)
-# simulation using the graph (test case: evacuation; spatial knowledge acquisition)
-# view graph for outdoor/indoor environment (attention vs. visibility)
+# (1) 2D to 3D + access (visibility vs. access) [Extending the model]
+# (2) Mapping route descriptions to route trajectory (series of connected views)
+# (3) Simulation using the graph (test case: evacuation; spatial knowledge acquisition)
+# (4) View graph for outdoor/indoor environment (attention vs. visibility)
+# (5) Mapping from other models to this one and this one to others
