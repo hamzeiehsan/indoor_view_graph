@@ -445,22 +445,6 @@ for key, val in views.items():
             break
     views_regions_info[key] = {'start': start, 'end': end}
 
-# decompose views based on visibility signatures
-# decomposed_views = {}
-# for view_id, view_region_info in views_regions_info.items():
-#     start = view_region_info['start']
-#     end = view_region_info['end']
-#
-#     intersect_regions = set(intersections[view_id])
-#     intersect_regions.remove(start)
-#     intersect_regions.remove(end)
-#     intersect_regions = list(intersect_regions)
-#     regions_info = {}
-#     for rid in intersect_regions:
-#         regions_info[rid] = regions_list[rid].centroid
-#
-#     decomposed_views[view_id] = {}
-
 # adjacent regions
 print('calculating adjacency matrix for regions')
 adjacency_matrix = {}
@@ -929,27 +913,6 @@ def demo_vision(vid):
     plot_shp(vv, point=True)
     print('signature: {}'.format(view_vision_signature(vv)))
 
-
-# problems:
-# zig-zag views when we consider region-to-region views
-# impact the shortest paths -> going back
-# decompose long views (that intersect multiple visibility regions)
-# reduce the number of nodes (and edges)
-# views -- unique visible information -- egocentric view (project to the line itself)
-# field of view: (should be applied to significantly reduce the number of nodes)
-# algorithmic design for graph pruning
-# pruning based on the triangles ...
-
-# :
-# meaningless regions -- agent's space
-# meaningless region connections --> moving towards a less important region? (?)
-# adding landmarks for capturing spatial information about the environment:
-# egocentric
-# alocentric
-# cardinal
-# order
-# compare views based on their information
-
 def calculate_spatial_relationships(vid):
     vv = view_vision(vid)
     door_signature = view_vision_signature(vv)
@@ -1218,3 +1181,27 @@ def demo(start=8, dest=43):
     dups = check_duplicate_views()
     duplicates = check_duplicate_validity(dups)
     plot_duplicates(duplicates)
+
+# Future works:
+# Add new views after decomposition (where new object become visible when we move in the view)
+# impractical views and regions -- small that does not make sense for pedestrian movement
+# algorithmic design for graph pruning -- remove duplicate views before graph construction
+
+# Spatial information:
+    # egocentric (done)
+    # order
+    # allocentric
+    # cardinal (?)
+    # topological
+
+# Label edges:
+    # turn
+    # movement (different grammars)
+
+# Generating route descriptions for the shortest path
+
+# future works:
+    # 2D to 3D + access (visibility vs. access)
+    # mapping route descriptions to route trajectory (series of connected views)
+    # simulation using the graph (test case: evacuation; spatial knowledge acquisition)
+    # view graph for outdoor/indoor environment (attention vs. visibility)
