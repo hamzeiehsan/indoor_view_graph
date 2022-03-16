@@ -16,7 +16,7 @@ from shapely.geometry import Polygon as Poly
 from shapely.geometry import shape, Point, LineString, MultiPolygon, LinearRing, MultiLineString, GeometryCollection
 from shapely.ops import unary_union, polygonize, nearest_points
 
-basic_test = True
+basic_test = False
 test = True
 address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
 polygon_file = 'study_area_all.geojson'
@@ -983,21 +983,29 @@ def egocentric_relationships(view_points, points):
     dirs = {}
     lefts = {}
     rights = {}
+    fronts = {}
     for idx, p in points.items():
         dir_rel = ego_dir(view_points[0], view_points[1], p)
         if dir_rel == 'on the left':
             lefts[idx] = p
         elif dir_rel == 'on the right':
             rights[idx] = p
+        else:
+            fronts[idx] = p
         dirs[idx] = {'dir': dir_rel, 'order': None}
     left_orders = ego_order(view_points, lefts)
     right_orders = ego_order(view_points, rights)
+    front_orders = ego_order(view_points, fronts)
     counter = 1
     for k, v in left_orders.items():
         dirs[k]['order'] = counter
         counter += 1
     counter = 1
     for k, v in right_orders.items():
+        dirs[k]['order'] = counter
+        counter += 1
+    counter = 1
+    for k, v in front_orders.items():
         dirs[k]['order'] = counter
         counter += 1
     return dirs
@@ -1031,6 +1039,7 @@ def check_duplicate_views():
                 already_in_duplicates.append(vid2)
                 print('duplicate info {0} - {1}: {2}'.format(vid1, vid2, srel1))
     return duplicates
+
 
 def check_duplicate_validity(dups):
     duplicates = {}
@@ -1129,6 +1138,7 @@ def plot_view_sequence(vid, to_view=False, two_sidded=False, turns=False, region
     plt.cla()
     plt.clf()
 
+
 def plot_duplicates(dups):
     fig, ax = plt.subplots()
     plt.plot(space_x, space_y, 'black')
@@ -1178,6 +1188,7 @@ def plot_duplicates(dups):
     plt.cla()
     plt.clf()
 
+
 def demo(start=8, dest=43):
     if basic_test:
         start = 0
@@ -1193,20 +1204,17 @@ def demo(start=8, dest=43):
 
     print('test shortest path between region {0} to region {1}'.format(start, dest))
     vpath = shortest_path_regions(start, dest)
-    input("Press Enter to continue...")
 
-    print('spatial relationships in the views:')
+    input("Calculate spatial relationships during the shortest path. Press Enter to continue...")
     for v in vpath:
         print('view: {0}, from {1} - to {2}'.format(v, rview_ids[v][0], rview_ids[v][1]))
         print(calculate_spatial_relationships(v))
         print('\n')
 
-    input("Press Enter to continue...")
-    print('plot all views')
+    input("Plot all views. Press Enter to continue...")
     plot_all(False, True)
 
-    input("Press Enter to continue...")
-    print('plot duplicate views')
+    input("Calculate duplicate views. Press Enter to continue...")
     dups = check_duplicate_views()
     duplicates = check_duplicate_validity(dups)
     plot_duplicates(duplicates)
