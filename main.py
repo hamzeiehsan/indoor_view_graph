@@ -913,6 +913,7 @@ def demo_vision(vid):
     plot_shp(vv, point=True)
     print('signature: {}'.format(view_vision_signature(vv)))
 
+
 def calculate_spatial_relationships(vid):
     vv = view_vision(vid)
     door_signature = view_vision_signature(vv)
@@ -1185,23 +1186,23 @@ def demo(start=8, dest=43):
 # Future works:
 # Add new views after decomposition (where new object become visible when we move in the view)
 # impractical views and regions -- small that does not make sense for pedestrian movement
-# algorithmic design for graph pruning -- remove duplicate views before graph construction
+# algorithmic design for graph pruning -- remove duplicate views before graph construction preserve movement continuity
 
 # Spatial information:
-    # egocentric (done)
-    # order
-    # allocentric
-    # cardinal (?)
-    # topological
+# egocentric (done)
+# order
+# allocentric
+# cardinal (?)
+# topological
 
 # Label edges:
-    # turn
-    # movement (different grammars)
+# turn
+# movement (different grammars)
 
 # Generating route descriptions for the shortest path
 
 # future works:
-    # 2D to 3D + access (visibility vs. access)
-    # mapping route descriptions to route trajectory (series of connected views)
-    # simulation using the graph (test case: evacuation; spatial knowledge acquisition)
-    # view graph for outdoor/indoor environment (attention vs. visibility)
+# 2D to 3D + access (visibility vs. access)
+# mapping route descriptions to route trajectory (series of connected views)
+# simulation using the graph (test case: evacuation; spatial knowledge acquisition)
+# view graph for outdoor/indoor environment (attention vs. visibility)
