@@ -17,7 +17,7 @@ from shapely.geometry import shape, Point, LineString, MultiPolygon, LinearRing,
 from shapely.ops import unary_union, polygonize, nearest_points
 
 basic_test = False
-test = True
+test = False
 address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
 polygon_file = 'study_area_all.geojson'
 holes_file = 'study_area_holes.geojson'
@@ -1181,10 +1181,10 @@ def demo(start=8, dest=43):
     input("Plot all views. Press Enter to continue...")
     plot_all(False, True)
 
-    input("Calculate duplicate views. Press Enter to continue...")
-    dups = check_duplicate_views()
-    duplicates = check_duplicate_validity(dups)
-    plot_duplicates(duplicates)
+    # input("Calculate duplicate views. Press Enter to continue...")
+    # dups = check_duplicate_views()
+    # duplicates = check_duplicate_validity(dups)
+    # plot_duplicates(duplicates)
 
 # Future works:
 # Add new views after decomposition (where new object become visible when we move in the view)
