@@ -17,7 +17,7 @@ from shapely.geometry import shape, Point, LineString, MultiPolygon, LinearRing,
 from shapely.ops import unary_union, polygonize, nearest_points
 
 basic_test = False
-test = False
+test = True
 address = '/Users/ehsanhamzei/Desktop/PostDoc/Floorplans/Melbourne Connect/'
 polygon_file = 'study_area_all.geojson'
 holes_file = 'study_area_holes.geojson'
@@ -782,8 +782,6 @@ for rvid, vals in rview_ids.items():
     if len(to_region_ids) == len(signatures) and len(from_region_ids) == len(signatures):
         break
 
-print('merge unnecessary views')
-
 # constructing region view graph
 print('constructing view graph for regions')
 rviewgraph = nx.DiGraph()
@@ -800,15 +798,15 @@ for vid, pids in rview_ids.items():
 
             if pids[1] == pids2[0]:  # movement
                 if rviews[vid][1].distance(rviews[vid2][0]) < epsilon:
-                    rviewgraph.add_edge(dvids[len(dvids) - 1], dvids2[0], weight=dv1)
+                    rviewgraph.add_edge(dvids[len(dvids) - 1], dvids2[0], weight=dv1, label='move')
             elif pids[0] == pids2[0]:  # turn
                 if rviews[vid][0].distance(rviews[vid2][0]) < epsilon:
-                    rviewgraph.add_edge(dvids[0], dvids2[0], weight=0)
+                    rviewgraph.add_edge(dvids[0], dvids2[0], weight=0, label='turn')
         for i in range(1, len(dvids)):
             v0 = dviews[i - 1]
             v1 = dviews[i]
             dv0 = calculate_distance(v0[0], v0[1])
-            rviewgraph.add_edge(dvids[i - 1], dvids[i], weight=dv0)
+            rviewgraph.add_edge(dvids[i - 1], dvids[i], weight=dv0, label='move')
 
 rview_ids = drview_ids
 rviews = drviews
@@ -1153,6 +1151,57 @@ def plot_duplicates(dups):
     plt.clf()
 
 
+# spatial relationships
+print('calculating all spatial relationships visible in each view')
+srelations = {}
+for vid in rview_ids.keys():
+    srelations[vid] = calculate_spatial_relationships(vid)
+
+# label nodes (views)
+print('Adding actions to views (nodes)')
+v_attributes = {}
+for vid in rviews.keys():
+    srelation = srelations[vid]
+    l_action = {}
+    r_action = {}
+    f_action = {}
+    for object, info in srelation.items():
+        if 'left' in info['dir']:
+            l_action[info['order']] = 'Go toward {} on your left'.format(object)
+        elif 'right' in info['dir']:
+            r_action[info['order']] = 'Go toward {} on your right'.format(object)
+        else:
+            f_action[info['order']] = 'Go toward {} on the front'.format(object)
+    v_attributes[vid] = {'l_action': [l[1] for l in sorted(l_action.items())],
+                         'f_action': [f[1] for f in sorted(f_action.items())],
+                         'r_action': [r[1] for r in sorted(r_action.items())]}
+nx.set_node_attributes(rviewgraph, v_attributes)
+
+# label edges (view->view)
+print('Adding actions to view relations (edges)')
+alpha = 40
+r_attributes = {}
+for vid in rviews.keys():
+    bearing1 = calculate_bearing(rviews[vid])
+    for vid2, attributes in dict(rviewgraph[vid]).items():
+        if attributes['label'] == 'move':
+            bearing2 = calculate_bearing(rviews[vid2])
+            if abs(bearing1-bearing2) <= alpha:
+                r_attributes[(vid, vid2)] = {'action': 'follow'}
+            elif 180 - alpha <= abs(bearing1 - bearing2) <= 180 + alpha:
+                r_attributes[(vid, vid2)] = {'action': 'turn back'}
+            elif bearing1 > bearing2:
+                if bearing1 - bearing2 > 180 + alpha:
+                    r_attributes[(vid, vid2)] = {'action': 'veer left'}
+                else:
+                    r_attributes[(vid, vid2)] = {'action': 'turn left'}
+            else:
+                if bearing2 - bearing1 > 180 - alpha:
+                    r_attributes[(vid, vid2)] = {'action': 'veer right'}
+                else:
+                    r_attributes[(vid, vid2)] = {'action': 'turn right'}
+nx.set_edge_attributes(rviewgraph, r_attributes)
+
 def demo(start=8, dest=43):
     if basic_test:
         start = 0
@@ -1169,11 +1218,28 @@ def demo(start=8, dest=43):
     print('test shortest path between region {0} to region {1}'.format(start, dest))
     vpath = shortest_path_regions(start, dest)
 
-    input("Calculate spatial relationships during the shortest path. Press Enter to continue...")
+    input("Spatial relationships during the shortest path. Press Enter to continue...")
     for v in vpath:
         print('view: {0}, from {1} - to {2}'.format(v, rview_ids[v][0], rview_ids[v][1]))
-        print(calculate_spatial_relationships(v))
+        print('\t{}'.format(srelations[v]))
         print('\n')
+
+    input("View action attributes. Press Enter to continue...")
+    for v in vpath:
+        v_attr = v_attributes[v]
+        print('view: {}'.format(v))
+        print('\tleft: {0}\n\tright: {1}\n\tfront: {2}'.format(v_attr['l_action'],
+                                                               v_attr['r_action'],
+                                                               v_attr['f_action']))
+        print('\n')
+
+    input("View->View action. Press Enter to continue...")
+    for idx, v in enumerate(vpath):
+        if idx != len(vpath) - 1:
+            r_attr = r_attributes[(v, vpath[idx+1])]
+            print('{0} - > {1}'.format(v, vpath[idx+1]))
+            print('\t{}'.format(r_attr['action']))
+
     if not basic_test:
         input("Plot view: {}. Press Enter to continue...".format(50))
         demo_vision(50)
