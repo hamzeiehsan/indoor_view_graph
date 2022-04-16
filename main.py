@@ -1167,11 +1167,11 @@ for vid in rviews.keys():
     f_action = {}
     for object, info in srelation.items():
         if 'left' in info['dir']:
-            l_action[info['order']] = '{} on your left'.format(object)
+            l_action[info['order']] = object
         elif 'right' in info['dir']:
-            r_action[info['order']] = '{} on your right'.format(object)
+            r_action[info['order']] = object
         else:
-            f_action[info['order']] = '{} on the front'.format(object)
+            f_action[info['order']] = object
     v_attributes[vid] = {'l_action': [l[1] for l in sorted(l_action.items())],
                          'f_action': [f[1] for f in sorted(f_action.items())],
                          'r_action': [r[1] for r in sorted(r_action.items())]}
@@ -1201,6 +1201,100 @@ for vid in rviews.keys():
                 else:
                     r_attributes[(vid, vid2)] = {'action': 'turn right'}
 nx.set_edge_attributes(rviewgraph, r_attributes)
+
+def minimal_description_follow(attrs):
+    instructions = []
+    objects_dict = {}
+    idx_dict = {}
+    max_idx = -1
+    for a_idx, attr in enumerate(attrs):
+        for key, objects in attr.items():
+            heading = key.split('_')[0]
+            for object in objects:
+                if object not in objects_dict.keys():
+                    objects_dict[object] = [a_idx, a_idx, heading]
+                    if a_idx not in idx_dict.keys():
+                        idx_dict[a_idx] = []
+                    idx_dict[a_idx].append(object)
+                else:
+                    objects_dict[object][1] = a_idx
+                if a_idx > max_idx:
+                    max_idx = a_idx
+    print(idx_dict)
+    print(objects_dict)
+    min_idx = min(list(idx_dict.keys()))
+    current_idx = min_idx
+    while current_idx < max_idx:
+        objects = idx_dict[current_idx]
+        info_list = []
+        for object in objects:
+            info_list.append(objects_dict[object])
+        max_range = -1
+        max_info = None
+        max_object_idx = -1
+        for object_idx, info in enumerate(info_list):
+            if info[1] - info[0] > max_range:
+                max_range = info[1] - info[0]
+                max_info = info
+                max_object_idx = object_idx
+        if max_info is not None:
+            heading = 'right'
+            if max_info[2] == 'f':
+                heading = 'front'
+            elif max_info[2] == 'l':
+                heading = 'left'
+            instructions.append('Follow {0} on the {1}'.format(objects[max_object_idx], heading))
+        temp_idx = max_info[1]
+        if temp_idx == max_idx:
+            break
+        elif temp_idx in idx_dict.keys():
+            current_idx = temp_idx
+        else:
+            while temp_idx not in idx_dict.keys() and temp_idx > current_idx:
+                temp_idx -= 1
+            if temp_idx == current_idx:
+                break
+            else:
+                current_idx = temp_idx
+    return instructions
+
+def generate_route_description(vpath):
+    instructions = []
+    v_attrs = []
+    for v in vpath:
+        v_attr = v_attributes[v]
+        v_attrs.append(v_attr)
+
+    start = v_attrs[0]
+    if len(start['f_action']) > 0:
+        instructions.append('Head towards {}'.format(start['f_action'][0]))
+    elif len(start['l_action']) > 0:
+        instructions.append('Start with {} on your left'.format(start['l_action'][0]))
+    elif len(start['r_action']) > 0:
+        instructions.append('Start with {} on your right'.format(start['r_action'][0]))
+
+    r_attrs = []
+    for idx, v in enumerate(vpath):
+        if idx != len(vpath) - 1:
+            r_attr = r_attributes[(v, vpath[idx + 1])]
+            r_attrs.append(r_attr)
+    temp = []
+    for idx, r_attr in enumerate(r_attrs):
+        start = v_attrs[idx]
+        end = v_attrs[idx+1]
+        if 'follow' in r_attr['action']:
+            temp.append(start)
+        else:
+            if len(temp) > 0:
+                instructions.extend(minimal_description_follow(temp))
+                temp = []
+            # todo turn l/r where/at []
+            instructions.append(r_attr['action'])
+    if len(temp) > 0:
+        print(temp)
+        instructions.extend(minimal_description_follow(temp))
+    instructions.append('Move forward until you reach the destination')
+    return instructions
 
 def demo(start=8, dest=43):
     if basic_test:
@@ -1268,7 +1362,10 @@ def demo(start=8, dest=43):
     # turn
     # movement (different grammars)
 
-# Demonstration: Generating route descriptions for the shortest path
+# Demonstration:
+    # Generating route descriptions for the shortest path
+    # Generating route (navigation) graph
+    # Generating place graph
 
 # future works:
 # (1) 2D to 3D + access (visibility vs. access) [Extending the model]
