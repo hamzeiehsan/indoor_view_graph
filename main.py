@@ -1167,11 +1167,11 @@ for vid in rviews.keys():
     f_action = {}
     for object, info in srelation.items():
         if 'left' in info['dir']:
-            l_action[info['order']] = 'Go toward {} on your left'.format(object)
+            l_action[info['order']] = '{} on your left'.format(object)
         elif 'right' in info['dir']:
-            r_action[info['order']] = 'Go toward {} on your right'.format(object)
+            r_action[info['order']] = '{} on your right'.format(object)
         else:
-            f_action[info['order']] = 'Go toward {} on the front'.format(object)
+            f_action[info['order']] = '{} on the front'.format(object)
     v_attributes[vid] = {'l_action': [l[1] for l in sorted(l_action.items())],
                          'f_action': [f[1] for f in sorted(f_action.items())],
                          'r_action': [r[1] for r in sorted(r_action.items())]}
