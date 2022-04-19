@@ -1168,7 +1168,7 @@ for vid in rview_ids.keys():
     srelations[vid] = calculate_spatial_relationships(vid)
 
 # label nodes (views)
-print('Adding actions to views (nodes)')
+print('Adding actions to views (nodes)')  # pass
 v_attributes = {}
 for vid in rviews.keys():
     srelation = srelations[vid]
@@ -1212,7 +1212,28 @@ for vid in rviews.keys():
                     r_attributes[(vid, vid2)] = {'action': 'turn right'}
 nx.set_edge_attributes(rviewgraph, r_attributes)
 
-def minimal_description_follow(attrs):
+
+def minimal_description_path(attrs, ids):
+    instructions = []
+    for idx, vid in enumerate(ids):
+        if idx < len(ids)-1:
+            vid2 = ids[idx+1]
+            if vid2 - vid == 1:  # possibly decomposed...
+                attr = attrs[idx+1]
+                attr2 = attrs[idx]
+                for key, objects in attr2.items():
+                    if len(attr2[key]) - len(attr[key]) == 1:
+                        current_objects = attr[key]
+                        for object in objects:
+                            if object not in current_objects:
+                                instructions = ['pass {}'.format(object)]
+    return instructions
+
+def minimal_description_follow(attrs, ids=[]):
+    if len(ids) > 0:
+        mdp = minimal_description_path(attrs, ids)
+        if len(mdp) > 0:
+            return mdp
     instructions = []
     objects_dict = {}
     idx_dict = {}
@@ -1289,24 +1310,28 @@ def generate_route_description(vpath):
             r_attr = r_attributes[(v, vpath[idx + 1])]
             r_attrs.append(r_attr)
     temp = []
+    temp_vids = []
     for idx, r_attr in enumerate(r_attrs):
         start = v_attrs[idx]
         end = v_attrs[idx+1]
         if 'follow' in r_attr['action']:
             temp.append(start)
+            temp_vids.append(vpath[idx])
         else:
             if len(temp) > 0:
-                instructions.extend(minimal_description_follow(temp))
+                instructions.extend(minimal_description_follow(temp, temp_vids))
                 temp = []
+                temp_vids = []
             # todo turn l/r where/at []
             instructions.append(r_attr['action'])
     if len(temp) > 0:
         print(temp)
-        instructions.extend(minimal_description_follow(temp))
+        print(temp_vids)
+        instructions.extend(minimal_description_follow(temp, temp_vids))
     instructions.append('Move forward until you reach the destination')
     return instructions
 
-def demo(start=8, dest=43):
+def demo(start=2, dest=74):  # another good example is 8, 43
     if basic_test:
         start = 0
         dest = 4
@@ -1383,3 +1408,5 @@ def demo(start=8, dest=43):
 # (3) Simulation using the graph (test case: evacuation; spatial knowledge acquisition)
 # (4) View graph for outdoor/indoor environment (attention vs. visibility)
 # (5) Mapping from other models to this one and this one to others
+vpath = shortest_path_regions(2, 74)
+generate_route_description(vpath)
