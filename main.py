@@ -152,6 +152,7 @@ def calculate_angle(p1, p2, p3):
 
 
 epsilon = 0.000001
+alpha = 40
 print('reading GeoJSON files (boundary, holes, doors and decision points)')
 boundary = read_geojson(address, polygon_file)['features'][0]['geometry']['coordinates'][0][0]
 if basic_test:
@@ -923,7 +924,7 @@ def calculate_spatial_relationships(vid):
     points = {}
     for d in door_signature:
         d_point = door_points[d]
-        points['door {}'.format(d)] = Point(d_point.x(), d_point.y())
+        points['gateway {}'.format(d)] = Point(d_point.x(), d_point.y())
     for l in landmark_signature:
         l_point = landmarks_points[l]
         points['landmark {}'.format((l))] = Point(l_point.x(), l_point.y())
@@ -931,7 +932,7 @@ def calculate_spatial_relationships(vid):
     return ego_rels
 
 
-def ego_dir(a, b, c):
+def ego_dir_det(a, b, c):
     det = ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
     if det > 0:
         return 'on the left'
@@ -939,6 +940,15 @@ def ego_dir(a, b, c):
         return 'in the front'
     else:
         return 'on the right'
+
+
+def ego_dir(a, b, c):
+    angle1 = calculate_bearing([a, b])
+    angle2 = calculate_bearing([a, c])
+    if abs(angle2-angle1) < alpha/2:
+        return 'in the front'
+    else:
+        return ego_dir_det(a, b, c)
 
 
 def egocentric_relationships(view_points, points):
@@ -1179,7 +1189,7 @@ nx.set_node_attributes(rviewgraph, v_attributes)
 
 # label edges (view->view)
 print('Adding actions to view relations (edges)')
-alpha = 40
+
 r_attributes = {}
 for vid in rviews.keys():
     bearing1 = calculate_bearing(rviews[vid])
