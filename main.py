@@ -846,9 +846,13 @@ def shortest_path_regions(rid1, rid2):
         plt.plot(holes_x[i], holes_y[i], 'r')
 
     rcentroid1 = regions_info[rid1]
-    plt.plot([rcentroid1.x], [rcentroid1.y], 'go')
+    plt.plot([rcentroid1.x], [rcentroid1.y], 'bo')
     rcentroid2 = regions_info[rid2]
-    plt.plot([rcentroid2.x], [rcentroid2.y], 'go')
+    plt.plot([rcentroid2.x], [rcentroid2.y], 'bo')
+
+    plt.plot([d.x() for d in door_points], [d.y() for d in door_points], 'go', label='gateways')
+    plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points], 'ro', label='landmarks')
+
 
     for region_id in regions_set:
         region = regions_list[region_id]
@@ -1251,8 +1255,7 @@ def minimal_description_follow(attrs, ids=[]):
                     objects_dict[object][1] = a_idx
                 if a_idx > max_idx:
                     max_idx = a_idx
-    print(idx_dict)
-    print(objects_dict)
+
     min_idx = min(list(idx_dict.keys()))
     current_idx = min_idx
     while current_idx < max_idx:
@@ -1322,16 +1325,18 @@ def generate_route_description(vpath):
                 instructions.extend(minimal_description_follow(temp, temp_vids))
                 temp = []
                 temp_vids = []
-            # todo turn l/r where/at []
-            instructions.append(r_attr['action'])
+                instructions[len(instructions)-1] = instructions[len(instructions)-1] + \
+                                                    ' and '+ r_attr['action']
+            else:
+                act = r_attr['action']
+                if act not in instructions[len(instructions)-1]:
+                    instructions.append('move further and '+ act + ' in the first decision point')
     if len(temp) > 0:
-        print(temp)
-        print(temp_vids)
         instructions.extend(minimal_description_follow(temp, temp_vids))
     instructions.append('Move forward until you reach the destination')
     return instructions
 
-def demo(start=2, dest=74):  # another good example is 8, 43
+def demo(start=2, dest=74):  # another good example is 8, 43 and 12, 54
     if basic_test:
         start = 0
         dest = 4
@@ -1376,6 +1381,31 @@ def demo(start=2, dest=74):  # another good example is 8, 43
     input("Plot all views. Press Enter to continue...")
     plot_all(False, True)
 
+    input("Describing the shortest path: Verbal description generation")
+    if not basic_test:
+        vpath = shortest_path_regions(2, 74)
+        instructions = generate_route_description(vpath)
+        print('************Verbal Description**************')
+        for instruction in instructions:
+            print('\t{}'.format(instruction))
+        print('********************END*********************\n')
+
+        input("Describing the shortest path: Verbal description generation")
+        vpath = shortest_path_regions(8, 43)
+        instructions = generate_route_description(vpath)
+        print('************Verbal Description**************')
+        for instruction in instructions:
+            print('\t{}'.format(instruction))
+        print('********************END*********************\n')
+
+        input("Describing the shortest path: Verbal description generation")
+        vpath = shortest_path_regions(12, 54)
+        instructions = generate_route_description(vpath)
+        print('************Verbal Description**************')
+        for instruction in instructions:
+            print('\t{}'.format(instruction))
+        print('********************END*********************\n')
+
     # input("Calculate duplicate views. Press Enter to continue...")
     # dups = check_duplicate_views()
     # duplicates = check_duplicate_validity(dups)
@@ -1408,5 +1438,3 @@ def demo(start=2, dest=74):  # another good example is 8, 43
 # (3) Simulation using the graph (test case: evacuation; spatial knowledge acquisition)
 # (4) View graph for outdoor/indoor environment (attention vs. visibility)
 # (5) Mapping from other models to this one and this one to others
-vpath = shortest_path_regions(2, 74)
-generate_route_description(vpath)
