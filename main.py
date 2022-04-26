@@ -1349,31 +1349,6 @@ def demo(start=2, dest=74):  # another good example is 8, 43 and 12, 54
     plot_region(dest)
     input("Press Enter to continue...")
 
-    print('test shortest path between region {0} to region {1}'.format(start, dest))
-    vpath = shortest_path_regions(start, dest)
-
-    input("Spatial relationships during the shortest path. Press Enter to continue...")
-    for v in vpath:
-        print('view: {0}, from {1} - to {2}'.format(v, rview_ids[v][0], rview_ids[v][1]))
-        print('\t{}'.format(srelations[v]))
-        print('\n')
-
-    input("View action attributes. Press Enter to continue...")
-    for v in vpath:
-        v_attr = v_attributes[v]
-        print('view: {}'.format(v))
-        print('\tleft: {0}\n\tright: {1}\n\tfront: {2}'.format(v_attr['l_action'],
-                                                               v_attr['r_action'],
-                                                               v_attr['f_action']))
-        print('\n')
-
-    input("View->View action. Press Enter to continue...")
-    for idx, v in enumerate(vpath):
-        if idx != len(vpath) - 1:
-            r_attr = r_attributes[(v, vpath[idx+1])]
-            print('{0} - > {1}'.format(v, vpath[idx+1]))
-            print('\t{}'.format(r_attr['action']))
-
     if not basic_test:
         input("Plot view: {}. Press Enter to continue...".format(50))
         demo_vision(50)
@@ -1384,14 +1359,6 @@ def demo(start=2, dest=74):  # another good example is 8, 43 and 12, 54
     input("Describing the shortest path: Verbal description generation")
     if not basic_test:
         vpath = shortest_path_regions(2, 74)
-        instructions = generate_route_description(vpath)
-        print('************Verbal Description**************')
-        for instruction in instructions:
-            print('\t{}'.format(instruction))
-        print('********************END*********************\n')
-
-        input("Describing the shortest path: Verbal description generation")
-        vpath = shortest_path_regions(8, 43)
         instructions = generate_route_description(vpath)
         print('************Verbal Description**************')
         for instruction in instructions:
