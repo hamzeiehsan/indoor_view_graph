@@ -18,7 +18,7 @@ class IndoorEnvironment:
         isovist_object = Isovist(container.boundary, container.holes, container.doors,
                                  container.dpoints, container.landmarks)
         vg = ViewGraph(isovist_object)
-        return vg
+        return vg, isovist_object
 
 
 if __name__ == '__main__':
@@ -28,4 +28,9 @@ if __name__ == '__main__':
     doors_files = ['hypo_doors.geojson']
     landmarks_files = ['hypo_landmarks.geojson']
     ie = IndoorEnvironment(address, polygon_files, holes_files, doors_files, [None], landmarks_files)
-    vg = ie.cviewgraph(0)
+    vg, isovist_object = ie.cviewgraph(0)
+    vp, pv= vg.shortest_path_regions(5, 74)
+    plotter = Plotter()
+    plotter.add_isovist(isovist_object)
+    plotter.add_views(pv)
+    vg.generate_route_description(vp)
