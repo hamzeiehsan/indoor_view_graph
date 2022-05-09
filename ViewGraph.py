@@ -593,7 +593,7 @@ class ViewGraph:
         if len(temp) > 0:
             instructions.extend(self.minimal_description_follow(temp, temp_vids))
         instructions[len(instructions)-1] = instructions[len(instructions) - 1] \
-                                            + 'and move forward until you reach the destination'
+                                            + ' and move forward until you reach the destination'
         Utility.print_instructions(instructions)
         return instructions
 
