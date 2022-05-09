@@ -853,7 +853,6 @@ def shortest_path_regions(rid1, rid2):
     plt.plot([d.x() for d in door_points], [d.y() for d in door_points], 'go', label='gateways')
     plt.plot([l.x() for l in landmarks_points], [l.y() for l in landmarks_points], 'ro', label='landmarks')
 
-
     for region_id in regions_set:
         region = regions_list[region_id]
         r_x, r_y = save_print_geojson(list(region.exterior.coords))
@@ -949,7 +948,7 @@ def ego_dir_det(a, b, c):
 def ego_dir(a, b, c):
     angle1 = calculate_bearing([a, b])
     angle2 = calculate_bearing([a, c])
-    if abs(angle2-angle1) < alpha/2:
+    if abs(angle2 - angle1) < alpha / 2:
         return 'in the front'
     else:
         return ego_dir_det(a, b, c)
@@ -1200,7 +1199,7 @@ for vid in rviews.keys():
     for vid2, attributes in dict(rviewgraph[vid]).items():
         if attributes['label'] == 'move':
             bearing2 = calculate_bearing(rviews[vid2])
-            if abs(bearing1-bearing2) <= alpha:
+            if abs(bearing1 - bearing2) <= alpha:
                 r_attributes[(vid, vid2)] = {'action': 'follow'}
             elif 180 - alpha <= abs(bearing1 - bearing2) <= 180 + alpha:
                 r_attributes[(vid, vid2)] = {'action': 'turn back'}
@@ -1220,10 +1219,10 @@ nx.set_edge_attributes(rviewgraph, r_attributes)
 def minimal_description_path(attrs, ids):
     instructions = []
     for idx, vid in enumerate(ids):
-        if idx < len(ids)-1:
-            vid2 = ids[idx+1]
+        if idx < len(ids) - 1:
+            vid2 = ids[idx + 1]
             if vid2 - vid == 1:  # possibly decomposed...
-                attr = attrs[idx+1]
+                attr = attrs[idx + 1]
                 attr2 = attrs[idx]
                 for key, objects in attr2.items():
                     if len(attr2[key]) - len(attr[key]) == 1:
@@ -1232,6 +1231,7 @@ def minimal_description_path(attrs, ids):
                             if object not in current_objects:
                                 instructions = ['pass {}'.format(object)]
     return instructions
+
 
 def minimal_description_follow(attrs, ids=[]):
     if len(ids) > 0:
@@ -1292,6 +1292,7 @@ def minimal_description_follow(attrs, ids=[]):
                 current_idx = temp_idx
     return instructions
 
+
 def generate_route_description(vpath):
     instructions = []
     v_attrs = []
@@ -1316,7 +1317,7 @@ def generate_route_description(vpath):
     temp_vids = []
     for idx, r_attr in enumerate(r_attrs):
         start = v_attrs[idx]
-        end = v_attrs[idx+1]
+        end = v_attrs[idx + 1]
         if 'follow' in r_attr['action']:
             temp.append(start)
             temp_vids.append(vpath[idx])
@@ -1325,16 +1326,17 @@ def generate_route_description(vpath):
                 instructions.extend(minimal_description_follow(temp, temp_vids))
                 temp = []
                 temp_vids = []
-                instructions[len(instructions)-1] = instructions[len(instructions)-1] + \
-                                                    ' and '+ r_attr['action']
+                instructions[len(instructions) - 1] = instructions[len(instructions) - 1] + \
+                                                      ' and ' + r_attr['action']
             else:
                 act = r_attr['action']
-                if act not in instructions[len(instructions)-1]:
-                    instructions.append('move further and '+ act + ' in the first decision point')
+                if act not in instructions[len(instructions) - 1]:
+                    instructions.append('move further and ' + act + ' in the first decision point')
     if len(temp) > 0:
         instructions.extend(minimal_description_follow(temp, temp_vids))
     instructions.append('Move forward until you reach the destination')
     return instructions
+
 
 def demo(start=2, dest=74):  # another good example is 8, 43 and 12, 54
     if basic_test:
@@ -1384,20 +1386,20 @@ def demo(start=2, dest=74):  # another good example is 8, 43 and 12, 54
 # algorithmic design for graph pruning -- remove duplicate views before graph construction preserve movement continuity
 
 # Spatial information:
-    # egocentric (done)
-    # order (done)
-    # allocentric
-    # cardinal (?)
-    # topological
+# egocentric (done)
+# order (done)
+# allocentric
+# cardinal (?)
+# topological
 
 # Label edges:
-    # turn
-    # movement (different grammars)
+# turn
+# movement (different grammars)
 
 # Demonstration:
-    # Generating route descriptions for the shortest path
-    # Generating route (navigation) graph
-    # Generating place graph
+# Generating route descriptions for the shortest path
+# Generating route (navigation) graph
+# Generating place graph
 
 # future works:
 # (1) 2D to 3D + access (visibility vs. access) [Extending the model]
