@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-
+import networkx as nx
 
 class Plotter:
     def __init__(self):
@@ -50,3 +50,7 @@ class Plotter:
         plt.close()
         plt.cla()
         plt.clf()
+
+    def plot_graph(self, graph):
+        nx.draw(graph)
+        plt.show()

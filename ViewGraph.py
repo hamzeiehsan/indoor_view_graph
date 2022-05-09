@@ -599,18 +599,25 @@ class ViewGraph:
 
 
     def generate_door_to_door_graph(self, isovist_object):
+        dtdgraph= nx.Graph()
+        dids = []
+        edges = []
         connected = []
         alreadythere = []
         for rid, doors in self.regions_doors_info.items():
             for d in doors:
+                dids.append(d)
                 rsignature = self.signatures[rid]
                 for didx in rsignature:
                     if didx != d and str(d)+'-'+str(didx) not in alreadythere \
                             and str(didx)+'-'+str(d) not in alreadythere:
                         connected.append([isovist_object.door_points[d], isovist_object.door_points[didx]])
+                        edges.append((d, didx))
                         alreadythere.append(str(d)+'-'+str(didx))
                         alreadythere.append(str(didx)+'-'+str(d))
-        return connected
+        dtdgraph.add_nodes_from(list(set(dids)))
+        dtdgraph.add_edges_from(edges)
+        return connected, dtdgraph
 
     def generate_all_gateway_paths(self):
         all_vps = []

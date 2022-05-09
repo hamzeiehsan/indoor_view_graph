@@ -22,13 +22,20 @@ class IndoorEnvironment:
 
 
 if __name__ == '__main__':
+    # test environment
     address = 'envs/hypo/'
     polygon_files = ['hypo_env.geojson']
     holes_files = ['hypo_holes.geojson']
     doors_files = ['hypo_doors.geojson']
     landmarks_files = ['hypo_landmarks.geojson']
+
+    # create an indoor environment
     ie = IndoorEnvironment(address, polygon_files, holes_files, doors_files, [None], landmarks_files)
+
+    # create view graph
     vg, isovist_object = ie.cviewgraph(0)
+
+    # calculate shortest path and generate verbal description
     vp, pv= vg.shortest_path_regions(5, 74)
     plotter = Plotter()
     plotter.add_isovist(isovist_object)
@@ -36,3 +43,13 @@ if __name__ == '__main__':
     plotter.show()
     plotter.close()
     vg.generate_route_description(vp)
+
+    # derive door-to-door visibility graph
+    connected, dtd_graph = vg.generate_door_to_door_graph(isovist_object)
+    plotter = Plotter()
+    plotter.add_isovist(isovist_object)
+    plotter.add_points_lines(connected)
+    plotter.show()
+    plotter.close()
+    plotter.plot_graph(dtd_graph)
+
