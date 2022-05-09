@@ -17,11 +17,11 @@ class ViewGraph:
         self.graph = None
         self.calculate(isovist_object)
 
-    def save(self):
-        pass
+    def save(self, address):
+        nx.write_graphml(self.rviewgraph, address)
 
-    def load(self):
-        pass
+    def load(self, address):
+        self.rviewgraph = nx.read_graphml(address)
 
     def calculate(self, isovist_object):
         self.shapes_list = [isovist_object.shapes[i]['shape'] for i in range(0, len(isovist_object.shapes))]
@@ -489,7 +489,7 @@ class ViewGraph:
                             current_objects = attr[key]
                             for object in objects:
                                 if object not in current_objects:
-                                    instructions = ['pass {}'.format(object)]
+                                    instructions = ['Pass {}'.format(object)]
         return instructions
 
     def minimal_description_follow(self, attrs, ids=[]):
@@ -592,7 +592,9 @@ class ViewGraph:
                         instructions.append('move further and ' + act + ' in the first decision point')
         if len(temp) > 0:
             instructions.extend(self.minimal_description_follow(temp, temp_vids))
-        instructions.append('Move forward until you reach the destination')
+        instructions[len(instructions)-1] = instructions[len(instructions) - 1] \
+                                            + 'and move forward until you reach the destination'
+        Utility.print_instructions(instructions)
         return instructions
 
 

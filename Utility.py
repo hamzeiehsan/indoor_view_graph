@@ -1,9 +1,9 @@
 import math
 
 import geojson
-import geopy.distance as distance
 import visilibity as vis
 from geojson import Polygon
+import numpy as np
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point
 
@@ -87,7 +87,7 @@ class Utility:
 
     @staticmethod
     def calculate_distance(d1, d2):
-        return distance.distance((d1.y, d1.x), (d2.y, d2.x)).km * 1000
+        return math.sqrt(math.pow(d1.x - d2.x, 2)+math.pow(d1.y-d2.y, 2))*10000
 
     @staticmethod
     def calculate_bearing(v):
@@ -104,9 +104,9 @@ class Utility:
     def calculate_coordinates(v, angle, d):
         bearing = Utility.calculate_bearing(v)
         nbearing = bearing + angle
-        td = distance.GeodesicDistance(kilometers=d)
-        res = td.destination((v[0].y, v[0].x), nbearing)
-        return Point(res.longitude, res.latitude)
+        x = v[0].x + d * sin(np.deg2rad(nbearing))
+        y = v[1].y + d * cos(np.deg2rad(nbearing))
+        return Point(x, y)
 
     @staticmethod
     def slope(x1, y1, x2, y2):  # Line slope given two points:
@@ -121,3 +121,10 @@ class Utility:
         slope1 = Utility.slope(p1[0], p1[1], p2[0], p2[1])
         slope2 = Utility.slope(p1[0], p1[1], p3[0], p3[1])
         return Utility.angle(slope1, slope2)
+
+    @staticmethod
+    def print_instructions(instructions):
+        print('************Verbal Description**************')
+        for instruction in instructions:
+            print('\t{}'.format(instruction))
+        print('********************END*********************\n')
