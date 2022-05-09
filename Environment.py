@@ -33,4 +33,6 @@ if __name__ == '__main__':
     plotter = Plotter()
     plotter.add_isovist(isovist_object)
     plotter.add_views(pv)
+    plotter.show()
+    plotter.close()
     vg.generate_route_description(vp)
