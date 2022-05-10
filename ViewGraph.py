@@ -106,6 +106,7 @@ class ViewGraph:
         print('finding regions that contains doors/gateways and decision points')
         self.regions_info = {i: self.regions_list[i].centroid for i in range(len(self.regions_list))}
         self.regions_doors_info = {}
+        done = None
         for pid, door in enumerate(isovist_object.door_points):
             dpoint = Point(door.x(), door.y())
             for rid, r in enumerate(self.regions_list):
@@ -113,11 +114,26 @@ class ViewGraph:
                     if rid not in self.regions_doors_info.keys():
                         self.regions_doors_info[rid] = []
                     self.regions_doors_info[rid].append(pid)
+                    done = pid
+            if done != pid:
+                min_dr = 1000
+                chosen = None
+                for rid, r in enumerate(self.regions_list):
+                    dr = r.distance(dpoint)
+                    if dr < min_dr:
+                        min_dr = dr
+                        chosen = rid
+                if chosen is not None:
+                    if chosen not in self.regions_doors_info.keys():
+                        self.regions_doors_info[chosen] = []
+                    self.regions_doors_info[chosen].append(pid)
+
 
         self.rview_ids = {}
         self.rviews = {}
         self.rview_ls = {}
         counter = 0
+        self.views_doors_info = {}
         for idx, signature in enumerate(self.signatures):
             # based on signature --> direct access (reach)
             block = None
@@ -163,6 +179,7 @@ class ViewGraph:
                     self.rviews[counter] = [point1, centroid]
                     self.rview_ids[counter] = [idx, idx]
                     self.rview_ls[counter] = LineString([point1, centroid])
+                    self.views_doors_info[pid1] = counter
                     counter += 1
                     for pid2 in pids:
                         if pid1 != pid2:
@@ -224,6 +241,10 @@ class ViewGraph:
         for vid_old in self.rview_ids.keys():
             vals = decomposed_views_dict[vid_old]
             r_dr_mapping_ids[vid_old] = []
+            for did, dvid in self.views_doors_info.items():
+                if dvid == vid_old:
+                    self.views_doors_info[did] = idx
+                    break
             for val in vals:
                 drview_ids[idx] = val['ids']
                 drviews[idx] = val['view']
@@ -422,22 +443,24 @@ class ViewGraph:
         shift = tan(a) * point.distance(p1)
         return shift
 
-    def shortest_path_regions(self, rid1, rid2):
-        regions_set = {rid1, rid2}
-
-        vid1 = self.from_region_ids[rid1]
-        vid2 = self.from_region_ids[rid2]
+    def shortest_path_regions(self, rid1, rid2, isvid=False):
+        if isvid:
+            vid1 = rid1
+            vid2 = rid2
+        else:
+            vid1 = self.from_region_ids[rid1]
+            vid2 = self.from_region_ids[rid2]
 
         vpath = nx.shortest_path(self.rviewgraph, vid1, vid2, weight='weight')
         path_view = []
 
-        vpath = vpath[:-1]
-        if len(vpath) >= 2 and self.rview_ids[vpath[0]][0] == self.rview_ids[vpath[1]][0]:
-            vpath = vpath[1:]
+        if not isvid:
+            vpath = vpath[:-1]
+            if len(vpath) >= 2 and self.rview_ids[vpath[0]][0] == self.rview_ids[vpath[1]][0]:
+                vpath = vpath[1:]
 
         for vid in vpath:
             path_view.append(self.rviews[vid])
-            regions_set = regions_set.union(self.rview_ids[vid])
 
         return vpath, path_view
 
@@ -656,40 +679,40 @@ class ViewGraph:
         dtdgraph.add_edges_from(edges)
         return connected, dtdgraph
 
-    def generate_all_gateway_paths(self):
+    def generate_all_gateway_paths(self, isovsit_object):
         all_vps = []
         all_pvs = []
-        filtered_pvs = []
-        filtered_vps = []
+
+        path_graph = nx.complete_graph(28)
+
         all_vps_info = {}
-        for rid1 in self.regions_doors_info.keys():
-            for rid2 in self.regions_doors_info.keys():
-                if rid1 != rid2:
-                    vp, pv = self.shortest_path_regions(rid1, rid2)
-                    all_vps_info[len(all_vps)] = {'from': rid1, 'to': rid2, 'index': len(all_vps),
+        for did1, vid1 in self.views_doors_info.items():
+            for did2, vid2 in self.views_doors_info.items():
+                if vid1 != vid2:
+                    vp, pv = self.shortest_path_regions(vid1, vid2, isvid=True)
+                    all_vps_info[len(all_vps)] = {'from': did1, 'to': did2, 'index': len(all_vps),
                                                   'length': nx.path_weight(self.rviewgraph, vp, weight='weight')}
+                    path_graph[did1][did2]['weight'] = all_vps_info[len(all_vps)]['length']
                     all_vps.append(vp)
                     all_pvs.append(pv)
-        min_length_from = {}
-        min_length_to = {}
-        for idx, vp in enumerate(all_vps):
-            pv = all_pvs[idx]
-            info = all_vps_info[idx]
-            if info['from'] not in min_length_from.keys():
-                min_length_from[info['from']] = {'idx': idx, 'length': info['length']}
-            elif min_length_from[info['from']]['length'] > info['length']:
-                min_length_from[info['from']] = {'idx': idx, 'length': info['length']}
-            if info['to'] not in min_length_to.keys():
-                min_length_to[info['to']] = {'idx': idx, 'length': info['length']}
-            elif min_length_to[info['to']]['length'] > info['length']:
-                min_length_to[info['to']] = {'idx': idx, 'length': info['length']}
+        T = nx.minimum_spanning_tree(path_graph, weight='weight')
+        st = sorted(T.edges(data=True))
+        spt_vps = []
+        spt_pvs = []
+        for record in st:
+            spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[record[0]],
+                                                        self.views_doors_info[record[1]],
+                                                        True)
+            spt_vps.append(spt_vp)
+            spt_pvs.append(spt_pv)
+        return all_vps, all_pvs, spt_vps, spt_pvs
 
-        for rid, min_from in min_length_from.items():
-            idx = min_from['idx']
-            if rid in min_length_to.keys() and min_length_to[rid]['length'] < min_from['length']:
-                idx = min_length_to[rid]['idx']
-            filtered_vps.append(all_vps[idx])
-            filtered_pvs.append(all_pvs[idx])
-
-        return all_vps, all_pvs, filtered_vps, filtered_pvs
-
+    def tsp(self, isovist_object, only_dt=True):
+        nodes = []
+        for did, props in isovist_object.door_props.items():
+            if props['type'] == 'dt' or not only_dt:
+                nodes.append(self.views_doors_info[did])
+        vp = nx.approximation.traveling_salesman_problem(self.rviewgraph, nodes=nodes,
+                                                         weight='weight')
+        pv = [self.rviews[vid] for vid in vp]
+        return vp, pv

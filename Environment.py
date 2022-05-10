@@ -68,13 +68,14 @@ if __name__ == '__main__':
     # derive all shortest path visibility graph
     plotter = Plotter()
     plotter.add_isovist(isovist_object)
-    vps, pvs, fvps, fpvs = vg.generate_all_gateway_paths()
+    vps, pvs, st_vps, st_pvs = vg.generate_all_gateway_paths()
     for pv in pvs:
         plotter.add_views(pv)
     plotter.show()
 
     plotter.refresh()
-    for pv in fpvs:
+    for pv in st_pvs:
         plotter.add_views(pv)
     plotter.show()
+
 
