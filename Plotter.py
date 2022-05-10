@@ -2,8 +2,17 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 class Plotter:
-    def __init__(self):
+    def __init__(self, isovist=None):
         self.fig, self.ax = plt.subplots()
+        if isovist is not None:
+            self.add_isovist(isovist)
+
+    def refresh(self, save_iso=True):
+        self.close()
+        if save_iso:
+            self.__init__(self.isovist)
+        else:
+            self.fig, self.ax = plt.subplots()
 
     def add_poly(self, space_x, space_y, color='black'):
         plt.plot(space_x, space_y, color)
@@ -36,6 +45,7 @@ class Plotter:
             self.ax.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=1)
 
     def add_isovist(self, isovist_object):
+        self.isovist = isovist_object
         self.add_poly(isovist_object.space_x, isovist_object.space_y)
         self.add_holes(isovist_object.holes_x, isovist_object.holes_y)
         self.add_points(isovist_object.door_points, 'gateway')

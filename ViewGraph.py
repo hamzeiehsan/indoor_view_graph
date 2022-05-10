@@ -27,9 +27,40 @@ class ViewGraph:
         self.shapes_list = [isovist_object.shapes[i]['shape'] for i in range(0, len(isovist_object.shapes))]
         overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
         gdf = gpd.GeoDataFrame(geometry=overlay_regions)
-        self.regions_list = list(gdf['geometry'])
-        regions_area = [r.area for r in self.regions_list]
-        # regions_list = [r for (idx, r) in enumerate(regions_list) if regions_area[idx] > 0.0000001]
+        regions = list(gdf['geometry'])
+        regions_area = [r.area for r in regions]
+        regions_area, regions = zip(*sorted(zip(regions_area, regions)))
+        self.regions_list = []
+        merge_dict = {}
+        skip = []
+        for idx, a in enumerate(regions_area):
+            if a < Parameters.min_area:
+                r = regions[idx]
+                touches = {}
+                max_length = -1
+                max_idx = -1
+                for idx2, r2 in enumerate(regions):
+                    if idx2 > idx and r2.touches(r):
+                        touches[idx2] = r2.intersection(r).length
+                        if touches[idx2] > max_length:
+                            max_length = touches[idx2]
+                            max_idx = idx2
+                if max_idx > 0 and touches[max_idx] > 0:
+                    if max_idx not in merge_dict.keys():
+                        merge_dict[max_idx] = []
+                    merge_dict[max_idx].append(idx)
+                    skip.append(idx)
+
+        for idx, r in enumerate(regions):
+            if idx not in skip:
+                if idx not in merge_dict.keys():
+                    self.regions_list.append(r)
+                else:
+                    temp = r
+                    for idx2 in merge_dict[idx]:
+                        temp = temp.union(regions[idx2])
+                    self.regions_list.append(temp)
+
         holes_centroids = []
         for idx, holex in enumerate(isovist_object.holes_x):
             holey = isovist_object.holes_y[idx]
@@ -598,23 +629,29 @@ class ViewGraph:
         return instructions
 
 
-    def generate_door_to_door_graph(self, isovist_object):
+    def generate_door_to_door_graph(self, isovist_object, only_doors=False):
         dtdgraph= nx.Graph()
         dids = []
         edges = []
         connected = []
         alreadythere = []
+        skip_gateways = []
+        if only_doors:
+            for idx, props in isovist_object.door_props.items():
+                if props['type'] == 'dt':
+                    skip_gateways.append(idx)
         for rid, doors in self.regions_doors_info.items():
             for d in doors:
-                dids.append(d)
-                rsignature = self.signatures[rid]
-                for didx in rsignature:
-                    if didx != d and str(d)+'-'+str(didx) not in alreadythere \
-                            and str(didx)+'-'+str(d) not in alreadythere:
-                        connected.append([isovist_object.door_points[d], isovist_object.door_points[didx]])
-                        edges.append((d, didx))
-                        alreadythere.append(str(d)+'-'+str(didx))
-                        alreadythere.append(str(didx)+'-'+str(d))
+                if d not in skip_gateways:
+                    dids.append(d)
+                    rsignature = self.signatures[rid]
+                    for didx in rsignature:
+                        if didx != d and str(d)+'-'+str(didx) not in alreadythere \
+                                and str(didx)+'-'+str(d) not in alreadythere and didx not in skip_gateways:
+                            connected.append([isovist_object.door_points[d], isovist_object.door_points[didx]])
+                            edges.append((d, didx))
+                            alreadythere.append(str(d)+'-'+str(didx))
+                            alreadythere.append(str(didx)+'-'+str(d))
         dtdgraph.add_nodes_from(list(set(dids)))
         dtdgraph.add_edges_from(edges)
         return connected, dtdgraph
@@ -622,11 +659,37 @@ class ViewGraph:
     def generate_all_gateway_paths(self):
         all_vps = []
         all_pvs = []
+        filtered_pvs = []
+        filtered_vps = []
+        all_vps_info = {}
         for rid1 in self.regions_doors_info.keys():
             for rid2 in self.regions_doors_info.keys():
                 if rid1 != rid2:
                     vp, pv = self.shortest_path_regions(rid1, rid2)
+                    all_vps_info[len(all_vps)] = {'from': rid1, 'to': rid2, 'index': len(all_vps),
+                                                  'length': nx.path_weight(self.rviewgraph, vp, weight='weight')}
                     all_vps.append(vp)
                     all_pvs.append(pv)
-        return all_vps, all_pvs
+        min_length_from = {}
+        min_length_to = {}
+        for idx, vp in enumerate(all_vps):
+            pv = all_pvs[idx]
+            info = all_vps_info[idx]
+            if info['from'] not in min_length_from.keys():
+                min_length_from[info['from']] = {'idx': idx, 'length': info['length']}
+            elif min_length_from[info['from']]['length'] > info['length']:
+                min_length_from[info['from']] = {'idx': idx, 'length': info['length']}
+            if info['to'] not in min_length_to.keys():
+                min_length_to[info['to']] = {'idx': idx, 'length': info['length']}
+            elif min_length_to[info['to']]['length'] > info['length']:
+                min_length_to[info['to']] = {'idx': idx, 'length': info['length']}
+
+        for rid, min_from in min_length_from.items():
+            idx = min_from['idx']
+            if rid in min_length_to.keys() and min_length_to[rid]['length'] < min_from['length']:
+                idx = min_length_to[rid]['idx']
+            filtered_vps.append(all_vps[idx])
+            filtered_pvs.append(all_pvs[idx])
+
+        return all_vps, all_pvs, filtered_vps, filtered_pvs
 
