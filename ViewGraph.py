@@ -238,12 +238,14 @@ class ViewGraph:
         drview_ls = {}
         r_dr_mapping_ids = {}
         idx = 0
+        already_updated = []
         for vid_old in self.rview_ids.keys():
             vals = decomposed_views_dict[vid_old]
             r_dr_mapping_ids[vid_old] = []
             for did, dvid in self.views_doors_info.items():
-                if dvid == vid_old:
+                if dvid == vid_old and did not in already_updated:
                     self.views_doors_info[did] = idx
+                    already_updated.append(did)
                     break
             for val in vals:
                 drview_ids[idx] = val['ids']
@@ -679,30 +681,36 @@ class ViewGraph:
         dtdgraph.add_edges_from(edges)
         return connected, dtdgraph
 
-    def generate_all_gateway_paths(self, isovsit_object):
+    def generate_all_gateway_paths(self, isovist_object):
         all_vps = []
         all_pvs = []
 
-        path_graph = nx.complete_graph(28)
+        path_graph = nx.complete_graph(len(isovist_object.door_points)
+                                       -isovist_object.door_idx)
 
         all_vps_info = {}
         for did1, vid1 in self.views_doors_info.items():
             for did2, vid2 in self.views_doors_info.items():
-                if vid1 != vid2:
+                if did1 >= isovist_object.door_idx and did2 >= isovist_object.door_idx and\
+                        vid1 != vid2:
                     vp, pv = self.shortest_path_regions(vid1, vid2, isvid=True)
                     all_vps_info[len(all_vps)] = {'from': did1, 'to': did2, 'index': len(all_vps),
                                                   'length': nx.path_weight(self.rviewgraph, vp, weight='weight')}
-                    path_graph[did1][did2]['weight'] = all_vps_info[len(all_vps)]['length']
+                    path_graph[did1-isovist_object.door_idx][did2-isovist_object.door_idx]['weight'] =\
+                        all_vps_info[len(all_vps)]['length']
                     all_vps.append(vp)
                     all_pvs.append(pv)
         T = nx.minimum_spanning_tree(path_graph, weight='weight')
         st = sorted(T.edges(data=True))
         spt_vps = []
         spt_pvs = []
+        idxs = set()
         for record in st:
-            spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[record[0]],
-                                                        self.views_doors_info[record[1]],
+            spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[record[0]+isovist_object.door_idx],
+                                                        self.views_doors_info[record[1]+isovist_object.door_idx],
                                                         True)
+            idxs.add(record[0]+isovist_object.door_idx)
+            idxs.add(record[1]+isovist_object.door_idx)
             spt_vps.append(spt_vp)
             spt_pvs.append(spt_pv)
         return all_vps, all_pvs, spt_vps, spt_pvs

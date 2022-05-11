@@ -25,9 +25,12 @@ class Plotter:
         plt.plot([d.x() for d in points], [d.y() for d in points],
                  color, label=label)
 
-    def add_points_lines(self, points_list, color='blue'):
+    def add_points_lines(self, points_list, is_vis=True, color='blue'):
         for twopoints in points_list:
-            plt.plot([d.x() for d in twopoints], [d.y() for d in twopoints], color=color)
+            if is_vis:
+                plt.plot([d.x() for d in twopoints], [d.y() for d in twopoints], color=color)
+            else:
+                plt.plot([d.x for d in twopoints], [d.y for d in twopoints], color=color)
 
     def add_views(self, path_view, is_labeled=False, label='views'):
         X = []
