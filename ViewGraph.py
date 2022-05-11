@@ -704,19 +704,71 @@ class ViewGraph:
         st = sorted(T.edges(data=True))
         spt_vps = []
         spt_pvs = []
-        idxs = set()
+        connections = {}
+        connections_details = {}
+
         for record in st:
             spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[record[0]+isovist_object.door_idx],
                                                         self.views_doors_info[record[1]+isovist_object.door_idx],
                                                         True)
-            idxs.add(record[0]+isovist_object.door_idx)
-            idxs.add(record[1]+isovist_object.door_idx)
+            if record[0]+isovist_object.door_idx not in connections.keys():
+                connections[record[0] + isovist_object.door_idx] = 0
+                connections_details[record[0] + isovist_object.door_idx] = []
+            connections[record[0]+isovist_object.door_idx] += 1
+            connections_details[record[0] + isovist_object.door_idx].append(record[1] + isovist_object.door_idx)
+
+
+            if record[1]+isovist_object.door_idx not in connections.keys():
+                connections[record[1] + isovist_object.door_idx] = 0
+                connections_details[record[1] + isovist_object.door_idx] = []
+            connections[record[1]+isovist_object.door_idx] += 1
+            connections_details[record[1] + isovist_object.door_idx].append(record[0] + isovist_object.door_idx)
+
             spt_vps.append(spt_vp)
             spt_pvs.append(spt_pv)
 
-        # find leaves and missing shortest path -- add to the list
+        # # # find leaves and missing shortest path -- add to the list
+        # already_added = []
+        # for did, connection in connections.items():
+        #     if connection == 1 and did not in already_added:
+        #         detail = connections_details[did][0]-isovist_object.door_idx
+        #         detail_deps = [v-isovist_object.door_idx for v in
+        #                        connections_details[detail+isovist_object.door_idx]]
+        #         candidates = dict(path_graph[did-isovist_object.door_idx])
+        #         min_weight = 10000
+        #         selected = -1
+        #         for candidate, info in candidates.items():
+        #             if min_weight > info['weight'] and detail != candidate and\
+        #                     candidate not in detail_deps:
+        #                 min_weight = info['weight']
+        #                 selected = candidate
+        #         if selected != -1:
+        #             if connections[selected+isovist_object.door_idx] == 1:
+        #                 already_added.append(selected+isovist_object.door_idx)
+        #             spt_vp, spt_pv = self.shortest_path_regions(
+        #                 self.views_doors_info[did],
+        #                 self.views_doors_info[selected + isovist_object.door_idx], True)
+        #             spt_vps.append(spt_vp)
+        #             spt_pvs.append(spt_pv)
 
         # doors to decision points -- keep only the smallest one
+
+        for door in range(isovist_object.door_idx):
+            dvid = self.views_doors_info[door]
+            max_weight = 10000
+            selected_vp = None
+            selected_pv = None
+            for vids in spt_vps:
+                for vid in vids:
+                    vp, pv = self.shortest_path_regions(dvid, vid,True)
+                    w = nx.path_weight(self.rviewgraph, vp, weight='weight')
+                    if w < max_weight:
+                        max_weight = w
+                        selected_vp = vp
+                        selected_pv = pv
+            if selected_vp is not None:
+                spt_pvs.append(selected_pv)
+                spt_vps.append(selected_vp)
 
         return all_vps, all_pvs, spt_vps, spt_pvs
 
