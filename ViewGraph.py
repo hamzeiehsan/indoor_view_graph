@@ -713,6 +713,11 @@ class ViewGraph:
             idxs.add(record[1]+isovist_object.door_idx)
             spt_vps.append(spt_vp)
             spt_pvs.append(spt_pv)
+
+        # find leaves and missing shortest path -- add to the list
+
+        # doors to decision points -- keep only the smallest one
+
         return all_vps, all_pvs, spt_vps, spt_pvs
 
     def tsp(self, isovist_object, only_dt=True):
