@@ -6,6 +6,7 @@ from geojson import Polygon
 import numpy as np
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point
+import skgeom as sg
 
 
 class Utility:
@@ -128,3 +129,22 @@ class Utility:
         for instruction in instructions:
             print('\t{}'.format(instruction))
         print('********************END*********************\n')
+
+    @staticmethod
+    def generate_sg_polygon(bound, holes):
+        bound_coordinates = bound['features'][0]['geometry']['coordinates'][0][0]
+        bound_coordinates.reverse()
+        poly = sg.Polygon([sg.Point2(k[0], k[1]) for k in bound_coordinates[:-1]])
+        holes_polys = []
+        for h in holes:
+            h_coordinates = h['geometry']['coordinates'][0][0]
+            # h_coordinates.reverse()
+            h_poly = sg.Polygon([sg.Point2(k[0], k[1]) for k in h_coordinates[:-1]])
+            holes_polys.append(h_poly)
+        polygon = sg.PolygonWithHoles(poly, holes_polys)
+        return polygon
+
+    @staticmethod
+    def generate_skeleton(bound, holes):
+        polygon = Utility.generate_sg_polygon(bound, holes)
+        return sg.skeleton.create_interior_straight_skeleton(polygon)
