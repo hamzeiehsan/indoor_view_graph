@@ -1,13 +1,13 @@
 import math
 
 import geojson
+import networkx as nx
+import numpy as np
+import skgeom as sg
 import visilibity as vis
 from geojson import Polygon
-import numpy as np
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point
-import skgeom as sg
-import networkx as nx
 
 
 class Utility:

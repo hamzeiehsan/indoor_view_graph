@@ -653,8 +653,8 @@ class ViewGraph:
         Utility.print_instructions(instructions)
         return instructions
 
-
     def generate_door_to_door_graph(self, isovist_object, only_doors=False):
+        print('generate door-to-door graph, only_doors {} from view graph'.format(only_doors))
         dtdgraph= nx.Graph()
         dids = []
         edges = []
@@ -671,17 +671,30 @@ class ViewGraph:
                     dids.append(d)
                     rsignature = self.signatures[rid]
                     for didx in rsignature:
-                        if didx != d and str(d)+'-'+str(didx) not in alreadythere \
-                                and str(didx)+'-'+str(d) not in alreadythere and didx not in skip_gateways:
+                        if didx != d and str(d) + '-' + str(didx) not in alreadythere \
+                                and str(didx) + '-' + str(d) not in alreadythere and didx not in skip_gateways:
                             connected.append([isovist_object.door_points[d], isovist_object.door_points[didx]])
                             edges.append((d, didx))
-                            alreadythere.append(str(d)+'-'+str(didx))
-                            alreadythere.append(str(didx)+'-'+str(d))
-        dtdgraph.add_nodes_from(list(set(dids)))
+                            alreadythere.append(str(d) + '-' + str(didx))
+                            alreadythere.append(str(didx) + '-' + str(d))
+        did_attributes = []
+        for d in list(set(dids)):
+            dtype = isovist_object.door_props[d]
+            attrs = {}
+            if dtype == 'dt':
+                dtype = 'decision point'
+                attrs = {'type': dtype, 'group': 1, 'label': 'gateway {}'.format(d)}
+            else:
+                dtype = 'door'
+                attrs = {'type': dtype, 'group': 2, 'label': 'gateway {}'.format(d)}
+            did_attributes.append((d, attrs))
+
+        dtdgraph.add_nodes_from(did_attributes)
         dtdgraph.add_edges_from(edges)
         return connected, dtdgraph
 
     def generate_all_gateway_paths(self, isovist_object):
+        print('derive navigation graph using spanning tree from viewgraph')
         all_vps = []
         all_pvs = []
 
@@ -726,32 +739,6 @@ class ViewGraph:
 
             spt_vps.append(spt_vp)
             spt_pvs.append(spt_pv)
-
-        # # # find leaves and missing shortest path -- add to the list
-        # already_added = []
-        # for did, connection in connections.items():
-        #     if connection == 1 and did not in already_added:
-        #         detail = connections_details[did][0]-isovist_object.door_idx
-        #         detail_deps = [v-isovist_object.door_idx for v in
-        #                        connections_details[detail+isovist_object.door_idx]]
-        #         candidates = dict(path_graph[did-isovist_object.door_idx])
-        #         min_weight = 10000
-        #         selected = -1
-        #         for candidate, info in candidates.items():
-        #             if min_weight > info['weight'] and detail != candidate and\
-        #                     candidate not in detail_deps:
-        #                 min_weight = info['weight']
-        #                 selected = candidate
-        #         if selected != -1:
-        #             if connections[selected+isovist_object.door_idx] == 1:
-        #                 already_added.append(selected+isovist_object.door_idx)
-        #             spt_vp, spt_pv = self.shortest_path_regions(
-        #                 self.views_doors_info[did],
-        #                 self.views_doors_info[selected + isovist_object.door_idx], True)
-        #             spt_vps.append(spt_vp)
-        #             spt_pvs.append(spt_pv)
-
-        # doors to decision points -- keep only the smallest one
 
         for door in range(isovist_object.door_idx):
             dvid = self.views_doors_info[door]
@@ -847,6 +834,7 @@ class ViewGraph:
         return ncounter
 
     def generate_place_graph(self, isovist_object):
+        print('derive place graph from view graph')
         relationships_investigated = []
         nplets = {}  # nid: {exp: '', rframe: '', sp_relation: sid, place: {id: pid, as: 'f/b'}
         references = {}  # reference: {place: pid, in: [{nplet: nid, pos: int, as: 'r/l'}]}

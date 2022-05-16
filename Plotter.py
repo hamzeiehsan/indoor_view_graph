@@ -69,8 +69,10 @@ class Plotter:
         nx.draw(graph)
         plt.show()
 
-    def write_graph(self, file, graph):
-        nt2 = Network(width='80%', height='900px')
+    def write_graph(self, file, graph, is_directed=True):
+        nt2 = Network(width='90%', height='800px', directed=is_directed)
         nt2.from_nx(graph, show_edge_weights=False)
+        nt2.options.physics.use_repulsion({'node_distance': 185, 'central_gravity': 0.2, 'spring_length': 200,
+                                           'spring_strength': 0.05, 'damping': 0.09})
         nt2.show_buttons(filter_=True)
         nt2.show(file)

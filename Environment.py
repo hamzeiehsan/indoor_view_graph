@@ -1,8 +1,9 @@
 from Container import Container
 from Isovist import Isovist
 from Plotter import Plotter
-from ViewGraph import ViewGraph
 from Utility import Utility
+from ViewGraph import ViewGraph
+
 
 class IndoorEnvironment:
     def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):  # todo: link between containers
@@ -52,6 +53,7 @@ if __name__ == '__main__':
     # derive place graph
     place_graph = vg.generate_place_graph(isovist_object)
     pg_l2_2 = Utility.create_subgraph(place_graph, 'landmark 2', 2)
+    pg_g7_2 = Utility.create_subgraph(place_graph, 'gateway 7', 2)
 
     input('Press Enter: Describe the shortest path')
     plotter = Plotter()
@@ -67,7 +69,7 @@ if __name__ == '__main__':
     plotter.add_points_lines(connected)
     plotter.show()
     plotter.close()
-    plotter.plot_graph(dtd_graph)
+    plotter.write_graph('d-t-d-all.html', dtd_graph, is_directed=False)
 
     input('Press Enter: Door to door visibility (only doors)')
     plotter = Plotter()
@@ -77,7 +79,7 @@ if __name__ == '__main__':
     plotter.add_points_lines(connected2)
     plotter.show()
     plotter.close()
-    plotter.plot_graph(dtd_graph2)
+    plotter.write_graph('d-t-d-doors.html', dtd_graph2, is_directed=False)
 
     input('Press Enter: Portal-junction navigation graph')
     plotter = Plotter()
@@ -100,3 +102,31 @@ if __name__ == '__main__':
     input('Press Enter: Place graph generation; visualize for all and only for landmark 2')
     plotter.write_graph('placegraph.html', place_graph)
     plotter.write_graph('placegraph_l2_2.html', pg_l2_2)
+    plotter.refresh()
+    ls = []
+    gs = []
+    for n in list(pg_l2_2.nodes):
+        if 'landmark ' in n:
+            lid = int(n.replace('landmark ', ''))
+            ls.append(isovist_object.landmarks_points[lid])
+        elif 'gateway ' in n:
+            gid = int(n.replace('gateway ', ''))
+            gs.append(isovist_object.door_points[gid])
+    plotter.add_points(ls, label='graph (landmarks)', color='ko')
+    plotter.add_points(gs, label='graph (gateways)', color='mo')
+    plotter.show()
+
+    plotter.write_graph('placegraph_g7_2.html', pg_g7_2)
+    plotter.refresh()
+    ls = []
+    gs = []
+    for n in list(pg_g7_2.nodes):
+        if 'landmark ' in n:
+            lid = int(n.replace('landmark ', ''))
+            ls.append(isovist_object.landmarks_points[lid])
+        elif 'gateway ' in n:
+            gid = int(n.replace('gateway ', ''))
+            gs.append(isovist_object.door_points[gid])
+    plotter.add_points(ls, label='graph (landmarks)', color='ko')
+    plotter.add_points(gs, label='graph (gateways)', color='mo')
+    plotter.show()
