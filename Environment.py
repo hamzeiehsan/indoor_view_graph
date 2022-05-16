@@ -98,5 +98,5 @@ if __name__ == '__main__':
     plotter.show()
 
     input('Press Enter: Place graph generation; visualize for all and only for landmark 2')
-    plotter.write_graph('placegraph.html', place_graph)
+    # plotter.write_graph('placegraph.html', place_graph)
     plotter.write_graph('placegraph_l2_2.html', pg_l2_2)
