@@ -787,7 +787,8 @@ class ViewGraph:
         for kr, record in dict_dict.items():
             title = ''
             for key, val in record.items():
-                title+='[{0}: {1}] '.format(key, val)
+                if key not in ['in', 'group']:
+                    title+='[{0}: {1}] '.format(key, val)
             record['title'] = title
 
 
