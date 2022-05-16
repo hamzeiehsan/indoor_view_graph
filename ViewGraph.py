@@ -781,3 +781,161 @@ class ViewGraph:
                                                          weight='weight')
         pv = [self.rviews[vid] for vid in vp]
         return vp, pv
+
+    @staticmethod
+    def generate_between_near(lefts, relationships_investigated, nplets, ncounter, references):
+        if len(lefts) > 2:
+            for l1 in lefts:
+                for l2 in lefts:
+                    for l3 in lefts:
+                        if l1 != l2 != l3:
+                            l1r = list(l1.keys())[0]
+                            l2r = list(l2.keys())[0]
+                            l3r = list(l3.keys())[0]
+                            o1 = l1[l1r]['order']
+                            o2 = l2[l2r]['order']
+                            o3 = l3[l3r]['order']
+                            if o1 < o2 < o3:
+                                expression = '{0} between {1} and {2}'.format(l2r, l1r, l3r)
+                                if expression not in relationships_investigated:
+                                    nplets['n{}'.format(ncounter)] = {
+                                        'exp': '{0} between {1} and {2}'.format(l2r, l1r, l3r),
+                                        'reference_frame': 'relative',
+                                        'sp_relation': 'between'}
+                                    references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                    references[l1r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                    references[l3r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 2, 'as': 'relatum'})
+                                    ncounter += 1
+                                    relationships_investigated.append(expression)
+                                if o2 - o1 == 1:
+                                    expression = '{0} near {1}'.format(l2r, l1r)
+                                    if expression not in relationships_investigated:
+                                        nplets['n{}'.format(ncounter)] = {
+                                            'exp': '{0} near {1}'.
+                                            format(l2r, l1r), 'reference_frame': 'relative',
+                                            'sp_relation': 'near'}
+                                        references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                        references[l1r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                        ncounter += 1
+                                        relationships_investigated.append(expression)
+                                        relationships_investigated.append('{0} near {1}'.format(l1r, l2r))
+                                if o3 - o2 == 1:
+                                    expression = '{0} near {1}'.format(l3r, l2r)
+                                    if expression not in relationships_investigated:
+                                        nplets['n{}'.format(ncounter)] = {
+                                            'exp': '{0} near {1}'.
+                                                format(l3r, l2r), 'reference_frame': 'relative',
+                                            'sp_relation': 'near'}
+                                        references[l3r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                        references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                        ncounter += 1
+                                        relationships_investigated.append(expression)
+                                        relationships_investigated.append('{0} near {1}'.format(l2r, l3r))
+        return ncounter
+
+    def generate_place_graph(self, isovist_object):
+        relationships_investigated = []
+        nplets = {}  # nid: {exp: '', rframe: '', sp_relation: sid, place: {id: pid, as: 'f/b'}
+        references = {}  # reference: {place: pid, in: [{nplet: nid, pos: int, as: 'r/l'}]}
+        pids = {}  # pid: {type: d/l/dt}
+        pcounter = 0
+        for d, door in enumerate(isovist_object.door_points):
+            if d < isovist_object.door_idx:
+                pids[pcounter] = {'type': 'door'}
+            else:
+                pids[pcounter] = {'type': 'decision point'}
+            references['gateway {}'.format(d)] = {'place': pcounter, 'in': []}
+            pcounter+=1
+        for l, landmark in enumerate(isovist_object.landmarks_points):
+            pids[pcounter] = {'type': 'landmark'}
+            references['landmark {}'.format(l)] = {'place': pcounter, 'in': []}
+            pcounter+=1
+        sids = {
+            # 'front': {'relation': 'front', 'family': 'relative direction'},
+            'left': {'relation': 'left', 'family': 'relative direction'},
+            'right': {'relation': 'right', 'family': 'relative direction'},
+            'between': {'relation': 'between', 'family': 'ternary'},
+            # 'across': {'relation': 'across', 'family': 'ternary'},
+            # 'inside': {'relation': 'in', 'family': 'topological'},
+            # 'disjoint': {'relation': 'disjoint', 'family': 'topological'},
+            'near': {'relation': 'near', 'family': 'distance'}
+            }
+        # sid: {relation: '', family: ''}  # incomplete
+
+        ncounter = 0
+        for vid, relationships in self.srelations.items():
+            if len(relationships) > 0:
+                fronts = []
+                lefts = []
+                rights = []
+                for place, relation in relationships.items():
+                    if 'dir' in relation.keys():
+                        if 'front' in relation['dir']:
+                            fronts.append({place: relation})
+                        elif 'right' in relation['dir']:
+                            rights.append({place: relation})
+                        else:
+                            lefts.append({place: relation})
+
+                # directional
+                for f in fronts:
+                    for l in lefts:
+                        for r in rights:
+                            fp = references[list(f.keys())[0]]['place']
+                            lpr = list(l.keys())[0]
+                            rpr = list(r.keys())[0]
+                            expression = '{0} left of {1} {2}'.format(lpr, rpr, fp)
+                            if expression not in relationships_investigated:
+
+                                nplets['n{}'.format(ncounter)] = {
+                                    'exp': '{0} left of {1}'.format(lpr, rpr),
+                                    'reference_frame': 'relative',
+                                    'sp_relation': 'left',
+                                    'place': {'id': fp, 'as': 'front'}}
+                                references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                ncounter+=1
+                                nplets['n{}'.format(ncounter)] = {
+                                    'exp': '{0} left of {1}'.format(rpr, lpr),
+                                    'reference_frame': 'relative',
+                                    'sp_relation': 'right',
+                                    'place': {'id': fp, 'as': 'front'}}
+                                references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                ncounter += 1
+                                relationships_investigated.append(expression)
+                                relationships_investigated.append('{0} right of {1} {2}'.format(rpr, lpr, fp))
+
+                # between and near
+                ncounter = ViewGraph.generate_between_near(lefts, relationships_investigated, nplets, ncounter,
+                                                           references)
+                ncounter = ViewGraph.generate_between_near(rights, relationships_investigated, nplets, ncounter,
+                                                           references)
+                ncounter = ViewGraph.generate_between_near(fronts, relationships_investigated, nplets, ncounter,
+                                                           references)
+
+        place_graph = nx.DiGraph()
+        # nodes: nplet (nid), place (pid), reference (rid), sp_rel (sid)
+        place_graph.add_nodes_from([(nid, attrs) for nid, attrs in nplets.items()])
+        place_graph.add_nodes_from([(pid, attrs) for pid, attrs in pids.items()])
+        place_graph.add_nodes_from([(sid, attrs) for sid, attrs in sids.items()])
+        place_graph.add_nodes_from(list(references.keys()))
+
+
+        for r, vals in references.items():  # relations: reference -> pid, reference -> nid(s)
+            pid = vals['place']
+            place_graph.add_edge(pid, r, label='referred by')
+            in_list = vals['in']
+            for in_rec in in_list:
+                nid = in_rec['nid']
+                place_graph.add_edge(r, nid, label='in')
+                place_graph[r][nid]['pos'] = in_rec['pos']
+                place_graph[r][nid]['as'] = in_rec['as']
+        for nid, vals in nplets.items():  # relations: nid -> sid, {nid -> pid}
+            sid = vals['sp_relation']
+            place_graph.add_edge(nid, sid, label='map')
+            if 'place' in vals.keys():
+                pid = vals['place']['id']
+                place_graph.add_edge(nid, pid, label='has_reference_direction')
+                place_graph[nid][pid]['as'] = vals['place']['as']
+        return place_graph
