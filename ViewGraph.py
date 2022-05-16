@@ -801,7 +801,8 @@ class ViewGraph:
                                     nplets['n{}'.format(ncounter)] = {
                                         'exp': '{0} between {1} and {2}'.format(l2r, l1r, l3r),
                                         'reference_frame': 'relative',
-                                        'sp_relation': 'between'}
+                                        'sp_relation': 'between',
+                                        'group':1}
                                     references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                     references[l1r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                     references[l3r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 2, 'as': 'relatum'})
@@ -813,7 +814,8 @@ class ViewGraph:
                                         nplets['n{}'.format(ncounter)] = {
                                             'exp': '{0} near {1}'.
                                             format(l2r, l1r), 'reference_frame': 'relative',
-                                            'sp_relation': 'near'}
+                                            'sp_relation': 'near',
+                                            'group':1}
                                         references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                         references[l1r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                         ncounter += 1
@@ -825,7 +827,8 @@ class ViewGraph:
                                         nplets['n{}'.format(ncounter)] = {
                                             'exp': '{0} near {1}'.
                                                 format(l3r, l2r), 'reference_frame': 'relative',
-                                            'sp_relation': 'near'}
+                                            'sp_relation': 'near',
+                                            'group':1}
                                         references[l3r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                         references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                         ncounter += 1
@@ -841,24 +844,24 @@ class ViewGraph:
         pcounter = 0
         for d, door in enumerate(isovist_object.door_points):
             if d < isovist_object.door_idx:
-                pids['place{}'.format(pcounter)] = {'type': 'door'}
+                pids['place{}'.format(pcounter)] = {'type': 'door', 'group':2}
             else:
-                pids['place{}'.format(pcounter)] = {'type': 'decision point'}
-            references['gateway {}'.format(d)] = {'place': 'place{}'.format(pcounter), 'in': []}
+                pids['place{}'.format(pcounter)] = {'type': 'decision point', 'group':2}
+            references['gateway {}'.format(d)] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3}
             pcounter+=1
         for l, landmark in enumerate(isovist_object.landmarks_points):
-            pids['place{}'.format(pcounter)] = {'type': 'landmark'}
-            references['landmark {}'.format(l)] = {'place': 'place{}'.format(pcounter), 'in': []}
+            pids['place{}'.format(pcounter)] = {'type': 'landmark', 'group':2}
+            references['landmark {}'.format(l)] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3}
             pcounter+=1
         sids = {
             # 'front': {'relation': 'front', 'family': 'relative direction'},
-            'left': {'relation': 'left', 'family': 'relative direction'},
-            'right': {'relation': 'right', 'family': 'relative direction'},
-            'between': {'relation': 'between', 'family': 'ternary'},
-            # 'across': {'relation': 'across', 'family': 'ternary'},
-            # 'inside': {'relation': 'in', 'family': 'topological'},
-            # 'disjoint': {'relation': 'disjoint', 'family': 'topological'},
-            'near': {'relation': 'near', 'family': 'distance'}
+            'left': {'relation': 'left', 'family': 'relative direction', 'group':4},
+            'right': {'relation': 'right', 'family': 'relative direction', 'group':4},
+            'between': {'relation': 'between', 'family': 'ternary', 'group':4},
+            # 'across': {'relation': 'across', 'family': 'ternary', 'group':4},
+            # 'inside': {'relation': 'in', 'family': 'topological', 'group':4},
+            # 'disjoint': {'relation': 'disjoint', 'family': 'topological', 'group':4},
+            'near': {'relation': 'near', 'family': 'distance', 'group':4}
             }
         # sid: {relation: '', family: ''}  # incomplete
 
@@ -890,7 +893,8 @@ class ViewGraph:
                                     'exp': '{0} left of {1}'.format(lpr, rpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'left',
-                                    'place': {'id': fp, 'as': 'front'}}
+                                    'place': {'id': fp, 'as': 'front'},
+                                    'group':1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                 ncounter+=1
@@ -898,7 +902,8 @@ class ViewGraph:
                                     'exp': '{0} left of {1}'.format(rpr, lpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'right',
-                                    'place': {'id': fp, 'as': 'front'}}
+                                    'place': {'id': fp, 'as': 'front'},
+                                    'group':1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                 ncounter += 1
@@ -918,7 +923,7 @@ class ViewGraph:
         place_graph.add_nodes_from([(nid, attrs) for nid, attrs in nplets.items()])
         place_graph.add_nodes_from([(pid, attrs) for pid, attrs in pids.items()])
         place_graph.add_nodes_from([(sid, attrs) for sid, attrs in sids.items()])
-        place_graph.add_nodes_from(list(references.keys()))
+        place_graph.add_nodes_from([(rid, {'group': 3}) for rid in list(references.keys())])
 
 
         for r, vals in references.items():  # relations: reference -> pid, reference -> nid(s)
@@ -936,7 +941,6 @@ class ViewGraph:
             sid = vals['sp_relation']
             place_graph.add_edge(nid, sid)
             place_graph[nid][sid]['label'] = 'map'
-            # place_graph[nid][sid]['title'] = 'map'
             if 'place' in vals.keys():
                 pid = vals['place']['id']
                 place_graph.add_edge(nid, pid)
