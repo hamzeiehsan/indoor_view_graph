@@ -7,6 +7,7 @@ import numpy as np
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point
 import skgeom as sg
+import networkx as nx
 
 
 class Utility:
@@ -148,3 +149,7 @@ class Utility:
     def generate_skeleton(bound, holes):
         polygon = Utility.generate_sg_polygon(bound, holes)
         return sg.skeleton.create_interior_straight_skeleton(polygon)
+
+    @staticmethod
+    def create_subgraph(graph, node, radius, undirected=True):
+        return nx.ego_graph(graph, node, radius=radius, undirected=undirected)

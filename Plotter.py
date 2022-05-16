@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+from pyvis.network import Network
 
 class Plotter:
     def __init__(self, isovist=None):
@@ -67,3 +68,9 @@ class Plotter:
     def plot_graph(self, graph):
         nx.draw(graph)
         plt.show()
+
+    def write_graph(self, file, graph):
+        nt2 = Network(width='80%', height='900px')
+        nt2.from_nx(graph, show_edge_weights=False)
+        nt2.show_buttons(filter_=True)
+        nt2.show(file)

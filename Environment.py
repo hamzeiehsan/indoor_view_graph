@@ -2,6 +2,7 @@ from Container import Container
 from Isovist import Isovist
 from Plotter import Plotter
 from ViewGraph import ViewGraph
+from Utility import Utility
 
 class IndoorEnvironment:
     def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):  # todo: link between containers
@@ -48,6 +49,10 @@ if __name__ == '__main__':
     # derive all shortest path visibility graph and spanning tree
     vps, pvs, st_vps, st_pvs = vg.generate_all_gateway_paths(isovist_object)
 
+    # derive place graph
+    place_graph = vg.generate_place_graph(isovist_object)
+    pg_l2_2 = Utility.create_subgraph(place_graph, 'landmark 2', 2)
+
     input('Press Enter: Describe the shortest path')
     plotter = Plotter()
     plotter.add_isovist(isovist_object)
@@ -91,3 +96,7 @@ if __name__ == '__main__':
     for pv in st_pvs:
         plotter.add_points_lines(pv, is_vis=False)
     plotter.show()
+
+    input('Press Enter: Place graph generation; visualize for all and only for landmark 2')
+    plotter.write_graph('placegraph.html', place_graph)
+    plotter.write_graph('placegraph_l2_2.html', pg_l2_2)

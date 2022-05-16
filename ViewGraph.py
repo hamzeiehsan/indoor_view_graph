@@ -841,14 +841,14 @@ class ViewGraph:
         pcounter = 0
         for d, door in enumerate(isovist_object.door_points):
             if d < isovist_object.door_idx:
-                pids[pcounter] = {'type': 'door'}
+                pids['place{}'.format(pcounter)] = {'type': 'door'}
             else:
-                pids[pcounter] = {'type': 'decision point'}
-            references['gateway {}'.format(d)] = {'place': pcounter, 'in': []}
+                pids['place{}'.format(pcounter)] = {'type': 'decision point'}
+            references['gateway {}'.format(d)] = {'place': 'place{}'.format(pcounter), 'in': []}
             pcounter+=1
         for l, landmark in enumerate(isovist_object.landmarks_points):
-            pids[pcounter] = {'type': 'landmark'}
-            references['landmark {}'.format(l)] = {'place': pcounter, 'in': []}
+            pids['place{}'.format(pcounter)] = {'type': 'landmark'}
+            references['landmark {}'.format(l)] = {'place': 'place{}'.format(pcounter), 'in': []}
             pcounter+=1
         sids = {
             # 'front': {'relation': 'front', 'family': 'relative direction'},
@@ -884,9 +884,8 @@ class ViewGraph:
                             fp = references[list(f.keys())[0]]['place']
                             lpr = list(l.keys())[0]
                             rpr = list(r.keys())[0]
-                            expression = '{0} left of {1} {2}'.format(lpr, rpr, fp)
+                            expression = '{0} left of {1}'.format(lpr, rpr)
                             if expression not in relationships_investigated:
-
                                 nplets['n{}'.format(ncounter)] = {
                                     'exp': '{0} left of {1}'.format(lpr, rpr),
                                     'reference_frame': 'relative',
@@ -904,7 +903,7 @@ class ViewGraph:
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                 ncounter += 1
                                 relationships_investigated.append(expression)
-                                relationships_investigated.append('{0} right of {1} {2}'.format(rpr, lpr, fp))
+                                relationships_investigated.append('{0} right of {1}'.format(rpr, lpr))
 
                 # between and near
                 ncounter = ViewGraph.generate_between_near(lefts, relationships_investigated, nplets, ncounter,
@@ -924,18 +923,23 @@ class ViewGraph:
 
         for r, vals in references.items():  # relations: reference -> pid, reference -> nid(s)
             pid = vals['place']
-            place_graph.add_edge(pid, r, label='referred by')
+            place_graph.add_edge(pid, r)
+            place_graph[pid][r]['label'] = 'referred by'
             in_list = vals['in']
             for in_rec in in_list:
                 nid = in_rec['nid']
-                place_graph.add_edge(r, nid, label='in')
+                place_graph.add_edge(r, nid)
                 place_graph[r][nid]['pos'] = in_rec['pos']
                 place_graph[r][nid]['as'] = in_rec['as']
+                place_graph[r][nid]['label'] = '{0}-{1}'.format(in_rec['as'], in_rec['pos'])
         for nid, vals in nplets.items():  # relations: nid -> sid, {nid -> pid}
             sid = vals['sp_relation']
-            place_graph.add_edge(nid, sid, label='map')
+            place_graph.add_edge(nid, sid)
+            place_graph[nid][sid]['label'] = 'map'
+            # place_graph[nid][sid]['title'] = 'map'
             if 'place' in vals.keys():
                 pid = vals['place']['id']
-                place_graph.add_edge(nid, pid, label='has_reference_direction')
+                place_graph.add_edge(nid, pid)
                 place_graph[nid][pid]['as'] = vals['place']['as']
+                place_graph[nid][pid]['label'] = 'has_reference_direction {}'.format(vals['place']['as'])
         return place_graph
