@@ -5,3 +5,4 @@ test.geojson
 regions.*
 test.py
 todo.md
+*.html
