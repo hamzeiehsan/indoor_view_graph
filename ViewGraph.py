@@ -897,7 +897,7 @@ class ViewGraph:
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                 ncounter+=1
                                 nplets['n{}'.format(ncounter)] = {
-                                    'exp': '{0} left of {1}'.format(rpr, lpr),
+                                    'exp': '{0} right of {1}'.format(rpr, lpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'right',
                                     'place': {'id': fp, 'as': 'front'},
