@@ -72,15 +72,5 @@ class Plotter:
     def write_graph(self, file, graph):
         nt2 = Network(width='80%', height='900px')
         nt2.from_nx(graph, show_edge_weights=False)
-        for node in nt2.nodes:
-            node['title'] = ''
-            for key, val in node.items():
-                if key not in ['size', 'label', 'shape']:
-                    node['title'] += '{0}: {1}  '.format(key, val)
-        for edge in nt2.edges:
-            edge['title'] = ''
-            for key, val in edge.items():
-                if key not in ['label', 'weight', 'from', 'to', 'title']:
-                    edge['title'] += '{0}: {1}  '.format(key, val)
         nt2.show_buttons(filter_=True)
         nt2.show(file)

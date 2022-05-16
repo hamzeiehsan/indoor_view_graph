@@ -783,6 +783,15 @@ class ViewGraph:
         return vp, pv
 
     @staticmethod
+    def generate_titles(dict_dict):
+        for kr, record in dict_dict.items():
+            title = ''
+            for key, val in record.items():
+                title+='[{0}: {1}] '.format(key, val)
+            record['title'] = title
+
+
+    @staticmethod
     def generate_between_near(lefts, relationships_investigated, nplets, ncounter, references):
         if len(lefts) > 2:
             for l1 in lefts:
@@ -920,10 +929,15 @@ class ViewGraph:
 
         place_graph = nx.DiGraph()
         # nodes: nplet (nid), place (pid), reference (rid), sp_rel (sid)
+        ViewGraph.generate_titles(nplets)
         place_graph.add_nodes_from([(nid, attrs) for nid, attrs in nplets.items()])
+        ViewGraph.generate_titles(pids)
         place_graph.add_nodes_from([(pid, attrs) for pid, attrs in pids.items()])
+        ViewGraph.generate_titles(sids)
         place_graph.add_nodes_from([(sid, attrs) for sid, attrs in sids.items()])
-        place_graph.add_nodes_from([(rid, {'group': 3}) for rid in list(references.keys())])
+        ViewGraph.generate_titles(references)
+        place_graph.add_nodes_from([(rid, {'group': 3, 'title': references[rid]['title']})
+                                    for rid in list(references.keys())])
 
 
         for r, vals in references.items():  # relations: reference -> pid, reference -> nid(s)
