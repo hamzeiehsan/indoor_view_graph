@@ -679,7 +679,7 @@ class ViewGraph:
                             alreadythere.append(str(didx) + '-' + str(d))
         did_attributes = []
         for d in list(set(dids)):
-            dtype = isovist_object.door_props[d]
+            dtype = isovist_object.door_props[d]['type']
             attrs = {}
             if dtype == 'dt':
                 dtype = 'decision point'
@@ -693,26 +693,36 @@ class ViewGraph:
         dtdgraph.add_edges_from(edges)
         return connected, dtdgraph
 
-    def generate_all_gateway_paths(self, isovist_object):
+    def get_door_region(self, did):
+        for rid, dids in self.regions_doors_info.items():
+            if did in dids:
+                return rid
+
+    def generate_navigation_graph(self, isovist_object, indirect_access=False):
         print('derive navigation graph using spanning tree from viewgraph')
         all_vps = []
         all_pvs = []
 
         path_graph = nx.complete_graph(len(isovist_object.door_points)
-                                       -isovist_object.door_idx)
+                                        -isovist_object.door_idx)
 
         all_vps_info = {}
         for did1, vid1 in self.views_doors_info.items():
+            rid1 = self.get_door_region(did1)
             for did2, vid2 in self.views_doors_info.items():
-                if did1 >= isovist_object.door_idx and did2 >= isovist_object.door_idx and\
-                        vid1 != vid2:
-                    vp, pv = self.shortest_path_regions(vid1, vid2, isvid=True)
-                    all_vps_info[len(all_vps)] = {'from': did1, 'to': did2, 'index': len(all_vps),
-                                                  'length': nx.path_weight(self.rviewgraph, vp, weight='weight')}
-                    path_graph[did1-isovist_object.door_idx][did2-isovist_object.door_idx]['weight'] =\
-                        all_vps_info[len(all_vps)]['length']
-                    all_vps.append(vp)
-                    all_pvs.append(pv)
+
+                if did1 >= isovist_object.door_idx and did2 >= isovist_object.door_idx \
+                        and vid1 != vid2:
+                    if indirect_access or did2 in self.signatures[rid1]:
+                        vp, pv = self.shortest_path_regions(vid1, vid2, isvid=True)
+                        all_vps_info[len(all_vps)] = {'from': did1, 'to': did2, 'index': len(all_vps),
+                                                      'length': nx.path_weight(self.rviewgraph, vp, weight='weight')}
+                        path_graph[did1 - isovist_object.door_idx][did2 - isovist_object.door_idx]['weight'] = \
+                            all_vps_info[len(all_vps)]['length']
+                        all_vps.append(vp)
+                        all_pvs.append(pv)
+                    else:
+                        path_graph[did1 - isovist_object.door_idx][did2 - isovist_object.door_idx]['weight'] = 100000
         T = nx.minimum_spanning_tree(path_graph, weight='weight')
         st = sorted(T.edges(data=True))
         spt_vps = []
@@ -720,22 +730,31 @@ class ViewGraph:
         connections = {}
         connections_details = {}
 
+        attrs = {
+            node: {'label': 'gateway {}'.format(node + isovist_object.door_idx), 'idx': node + isovist_object.door_idx,
+                   'group': 'decision points'} for node in range(len(T.nodes))}
+        nx.set_node_attributes(T, attrs)
+
         for record in st:
-            spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[record[0]+isovist_object.door_idx],
-                                                        self.views_doors_info[record[1]+isovist_object.door_idx],
+            idx1 = record[0]
+            idx2 = record[1]
+            idx1 += isovist_object.door_idx
+            idx2 += isovist_object.door_idx
+            spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[idx1],
+                                                        self.views_doors_info[idx2],
                                                         True)
             if record[0]+isovist_object.door_idx not in connections.keys():
-                connections[record[0] + isovist_object.door_idx] = 0
-                connections_details[record[0] + isovist_object.door_idx] = []
-            connections[record[0]+isovist_object.door_idx] += 1
-            connections_details[record[0] + isovist_object.door_idx].append(record[1] + isovist_object.door_idx)
+                connections[idx1] = 0
+                connections_details[idx1] = []
+            connections[idx1] += 1
+            connections_details[idx1].append(idx2)
 
 
-            if record[1]+isovist_object.door_idx not in connections.keys():
-                connections[record[1] + isovist_object.door_idx] = 0
-                connections_details[record[1] + isovist_object.door_idx] = []
-            connections[record[1]+isovist_object.door_idx] += 1
-            connections_details[record[1] + isovist_object.door_idx].append(record[0] + isovist_object.door_idx)
+            if idx2 not in connections.keys():
+                connections[idx2] = 0
+                connections_details[idx2] = []
+            connections[idx2] += 1
+            connections_details[idx2].append(idx1)
 
             spt_vps.append(spt_vp)
             spt_pvs.append(spt_pv)
@@ -747,7 +766,7 @@ class ViewGraph:
             selected_pv = None
             for vids in spt_vps:
                 for vid in vids:
-                    vp, pv = self.shortest_path_regions(dvid, vid,True)
+                    vp, pv = self.shortest_path_regions(dvid, vid, True)
                     w = nx.path_weight(self.rviewgraph, vp, weight='weight')
                     if w < max_weight:
                         max_weight = w
@@ -757,16 +776,20 @@ class ViewGraph:
                 spt_pvs.append(selected_pv)
                 spt_vps.append(selected_vp)
 
-        return all_vps, all_pvs, spt_vps, spt_pvs
+        return all_vps, all_pvs, spt_vps, spt_pvs, T
 
-    def tsp(self, isovist_object, only_dt=True):
-        nodes = []
-        for did, props in isovist_object.door_props.items():
-            if props['type'] == 'dt' or not only_dt:
-                nodes.append(self.views_doors_info[did])
-        vp = nx.approximation.traveling_salesman_problem(self.rviewgraph, nodes=nodes,
-                                                         weight='weight')
-        pv = [self.rviews[vid] for vid in vp]
+    def tsp(self, isovist_object, graph=None, nodes=None, only_dt=True):
+        if graph is None:
+            graph = self.rviewgraph
+            nodes = []
+            for did, props in isovist_object.door_props.items():
+                if props['type'] == 'dt' or not only_dt:
+                    nodes.append(self.views_doors_info[did])
+        vp = nx.approximation.traveling_salesman_problem(graph, nodes=nodes, weight='weight')
+        if graph != self.rviewgraph:
+            pv = None
+        else:
+            pv = [self.rviews[vid] for vid in vp]
         return vp, pv
 
     @staticmethod

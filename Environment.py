@@ -48,7 +48,8 @@ if __name__ == '__main__':
     connected2, dtd_graph2 = vg.generate_door_to_door_graph(isovist_object, only_doors=True)
 
     # derive all shortest path visibility graph and spanning tree
-    vps, pvs, st_vps, st_pvs = vg.generate_all_gateway_paths(isovist_object)
+    vps, pvs, st_vps, st_pvs, nvgraph =\
+        vg.generate_navigation_graph(isovist_object, indirect_access=False)
 
     # derive place graph
     place_graph = vg.generate_place_graph(isovist_object)
