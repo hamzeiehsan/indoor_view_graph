@@ -803,7 +803,7 @@ class ViewGraph:
 
 
     @staticmethod
-    def generate_between_near(lefts, relationships_investigated, nplets, ncounter, references):
+    def generate_between_near(lefts, relationships_investigated, nplets, ncounter, references, bearing):
         if len(lefts) > 2:
             for l1 in lefts:
                 for l2 in lefts:
@@ -821,6 +821,7 @@ class ViewGraph:
                                     nplets['n{}'.format(ncounter)] = {
                                         'exp': '{0} between {1} and {2}'.format(l2r, l1r, l3r),
                                         'reference_frame': 'relative',
+                                        'bearing': bearing,
                                         'sp_relation': 'between',
                                         'group':1}
                                     references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
@@ -888,6 +889,7 @@ class ViewGraph:
 
         ncounter = 0
         for vid, relationships in self.srelations.items():
+            bearing = Utility.calculate_bearing(self.rviews[vid])
             if len(relationships) > 0:
                 fronts = []
                 lefts = []
@@ -914,7 +916,7 @@ class ViewGraph:
                                     'exp': '{0} right of {1}'.format(lpr, rpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'left',
-                                    'place': {'id': fp, 'as': 'front'},
+                                    'place': {'id': fp, 'as': 'front', 'bearing': bearing},
                                     'group':1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
@@ -923,7 +925,7 @@ class ViewGraph:
                                     'exp': '{0} left of {1}'.format(rpr, lpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'left',
-                                    'place': {'id': fp, 'as': 'front'},
+                                    'place': {'id': fp, 'as': 'front', 'bearing': bearing},
                                     'group':1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
@@ -933,11 +935,11 @@ class ViewGraph:
 
                 # between and near
                 ncounter = ViewGraph.generate_between_near(lefts, relationships_investigated, nplets, ncounter,
-                                                           references)
+                                                           references, bearing)
                 ncounter = ViewGraph.generate_between_near(rights, relationships_investigated, nplets, ncounter,
-                                                           references)
+                                                           references, bearing)
                 ncounter = ViewGraph.generate_between_near(fronts, relationships_investigated, nplets, ncounter,
-                                                           references)
+                                                           references, bearing)
 
         place_graph = nx.DiGraph()
         # nodes: nplet (nid), place (pid), reference (rid), sp_rel (sid)
