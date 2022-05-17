@@ -908,10 +908,10 @@ class ViewGraph:
                             fp = references[list(f.keys())[0]]['place']
                             lpr = list(l.keys())[0]
                             rpr = list(r.keys())[0]
-                            expression = '{0} left of {1}'.format(lpr, rpr)
+                            expression = '{0} right of {1}'.format(lpr, rpr)
                             if expression not in relationships_investigated:
                                 nplets['n{}'.format(ncounter)] = {
-                                    'exp': '{0} left of {1}'.format(lpr, rpr),
+                                    'exp': '{0} right of {1}'.format(lpr, rpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'left',
                                     'place': {'id': fp, 'as': 'front'},
@@ -920,9 +920,9 @@ class ViewGraph:
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                 ncounter+=1
                                 nplets['n{}'.format(ncounter)] = {
-                                    'exp': '{0} right of {1}'.format(rpr, lpr),
+                                    'exp': '{0} left of {1}'.format(rpr, lpr),
                                     'reference_frame': 'relative',
-                                    'sp_relation': 'right',
+                                    'sp_relation': 'left',
                                     'place': {'id': fp, 'as': 'front'},
                                     'group':1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
