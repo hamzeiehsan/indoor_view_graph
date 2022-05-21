@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[145.068574, -37.812753], [145.068559, -37.814871], [145.065859, -37.814871], [145.065889, -37.812753], [145.068574, -37.812753]]]]}, "properties": {"id": 101, "name": "D_Toilet", "full_name": "Disabled Toilet"}}]}

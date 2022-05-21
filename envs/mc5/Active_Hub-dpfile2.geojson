@@ -1,0 +1,18 @@
+{
+"type": "FeatureCollection",
+"name": "Active_Hub-dpfile2",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 0, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.053688, -37.822177 ] } },
+{ "type": "Feature", "properties": { "id": 1, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.043768, -37.818676 ] } },
+{ "type": "Feature", "properties": { "id": 2, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.05955, -37.817437 ] } },
+{ "type": "Feature", "properties": { "id": 3, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.057955, -37.817403 ] } },
+{ "type": "Feature", "properties": { "id": 4, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.057272, -37.817874 ] } },
+{ "type": "Feature", "properties": { "id": 5, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.056455, -37.817861 ] } },
+{ "type": "Feature", "properties": { "id": 6, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.05302, -37.817809 ] } },
+{ "type": "Feature", "properties": { "id": 7, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.051989, -37.820657 ] } },
+{ "type": "Feature", "properties": { "id": 8, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.050665, -37.820732 ] } },
+{ "type": "Feature", "properties": { "id": 9, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.049879, -37.820829 ] } },
+{ "type": "Feature", "properties": { "id": 10, "type": "dt" }, "geometry": { "type": "Point", "coordinates": [ 145.051192, -37.820042 ] } }
+]
+}

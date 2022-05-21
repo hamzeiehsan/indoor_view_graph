@@ -766,12 +766,15 @@ class ViewGraph:
             selected_pv = None
             for vids in spt_vps:
                 for vid in vids:
-                    vp, pv = self.shortest_path_regions(dvid, vid, True)
-                    w = nx.path_weight(self.rviewgraph, vp, weight='weight')
-                    if w < max_weight:
-                        max_weight = w
-                        selected_vp = vp
-                        selected_pv = pv
+                    try:
+                        vp, pv = self.shortest_path_regions(dvid, vid, True)
+                        w = nx.path_weight(self.rviewgraph, vp, weight='weight')
+                        if w < max_weight:
+                            max_weight = w
+                            selected_vp = vp
+                            selected_pv = pv
+                    except:
+                        print('no path from {0} to {1}'.format(door, vid))
             if selected_vp is not None:
                 spt_pvs.append(selected_pv)
                 spt_vps.append(selected_vp)

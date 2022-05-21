@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[145.068559, -37.814871], [145.068537, -37.816847], [145.061768, -37.816698], [145.061818, -37.812708], [145.065889, -37.812753], [145.065859, -37.814871], [145.068559, -37.814871]]]]}, "properties": {"id": 102, "name": "W_Toilet", "full_name": "Women Toilet"}}]}

@@ -19,8 +19,8 @@ class Isovist:
         self.holes_shape = []
         self.holes_x = []
         self.holes_y = []
-        for h in holes:
-            self.holes_list.append(Utility.reformat_polygon(h['geometry']['coordinates'][0][0]))
+        for h in holes: # todo: check whether it's counter clockwise or not -- if not: False -> True
+            self.holes_list.append(Utility.reformat_polygon(h['geometry']['coordinates'][0][0], False))
             h_x, h_y = Utility.save_print_geojson(h['geometry']['coordinates'][0][0])
             self.holes_x.append(h_x)
             self.holes_y.append(h_y)

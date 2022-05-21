@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[145.076849, -37.81282], [145.078655, -37.812872], [145.078613, -37.815644], [145.077151, -37.816574], [145.077132, -37.817035], [145.076686, -37.817026], [145.076849, -37.81282]]]]}, "properties": {"id": 7, "name": "StoreRoom", "full_name": "Store Room"}}]}

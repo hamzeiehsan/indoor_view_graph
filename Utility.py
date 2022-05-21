@@ -1,3 +1,4 @@
+import itertools
 import math
 
 import geojson
@@ -8,6 +9,9 @@ import visilibity as vis
 from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point
+import geojson
+
+import Parameters
 
 
 class Utility:
@@ -132,14 +136,24 @@ class Utility:
         print('********************END*********************\n')
 
     @staticmethod
-    def generate_sg_polygon(bound, holes):
-        bound_coordinates = bound['features'][0]['geometry']['coordinates'][0][0]
+    def generate_sg_polygon(bound, holes, reverse=True):
+        if isinstance(bound, dict) and 'features' in bound.keys():
+            if bound['features'][0]['geometry']['type'] == 'Polygon':
+                bound_coordinates = bound['features'][0]['geometry']['coordinates']
+            else:
+                bound_coordinates = bound['features'][0]['geometry']['coordinates'][0][0]
+        else:
+            bound_coordinates = bound
         bound_coordinates.reverse()
         poly = sg.Polygon([sg.Point2(k[0], k[1]) for k in bound_coordinates[:-1]])
         holes_polys = []
         for h in holes:
-            h_coordinates = h['geometry']['coordinates'][0][0]
-            # h_coordinates.reverse()
+            if h['geometry']['type'] == 'Polygon':
+                h_coordinates = h['geometry']['coordinates']
+            else:
+                h_coordinates = h['geometry']['coordinates'][0][0]
+            if reverse:
+                h_coordinates.reverse()
             h_poly = sg.Polygon([sg.Point2(k[0], k[1]) for k in h_coordinates[:-1]])
             holes_polys.append(h_poly)
         polygon = sg.PolygonWithHoles(poly, holes_polys)
@@ -149,6 +163,29 @@ class Utility:
     def generate_skeleton(bound, holes):
         polygon = Utility.generate_sg_polygon(bound, holes)
         return sg.skeleton.create_interior_straight_skeleton(polygon)
+
+    @staticmethod
+    def collect_points(input_list, threshold=Parameters.Parameters.max_collect_geom):
+        combos = itertools.combinations(input_list, 2)
+        points_to_remove = [point2 for point1, point2 in combos if point1.distance(point2) <= threshold]
+        points_to_keep = [point for point in input_list if point not in points_to_remove]
+        return points_to_keep
+
+    @staticmethod
+    def extract_decision_points(area_shp, skeleton, start_id=0):
+        dpoints = []
+        points = []
+        for v in skeleton.vertices:
+            p = Point(v.point.x(), v.point.y())
+            if area_shp.contains(p):
+                points.append(p)
+        filtered_points = Utility.collect_points(points)
+        for p in filtered_points:
+            f = geojson.Feature(geometry=geojson.Point((p.x, p.y)),
+                                properties={'id': start_id, 'type': 'dt'})
+            start_id += 1
+            dpoints.append(f)
+        return geojson.FeatureCollection(dpoints)
 
     @staticmethod
     def create_subgraph(graph, node, radius, undirected=True):

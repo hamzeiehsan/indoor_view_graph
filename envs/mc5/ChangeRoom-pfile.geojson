@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[145.069519, -37.812771], [145.07522, -37.8128], [145.075038, -37.816989], [145.069351, -37.816864], [145.069519, -37.812771]]]]}, "properties": {"id": 5, "name": "ChangeRoom", "full_name": "Change Room"}}]}

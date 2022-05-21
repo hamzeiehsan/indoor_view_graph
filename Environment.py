@@ -1,8 +1,10 @@
+import shapely.geometry
 from Container import Container
 from Isovist import Isovist
 from Plotter import Plotter
 from Utility import Utility
 from ViewGraph import ViewGraph
+from geojson import MultiPolygon, Feature, FeatureCollection, dump
 
 
 class IndoorEnvironment:
@@ -15,6 +17,73 @@ class IndoorEnvironment:
         else:
             print('environment files -- count is invalid')
 
+    @staticmethod
+    def reformat(address, containers_file, doors_file, landmarks_file, dpoints_file=None):
+        pfiles = []
+        hfiles = []
+        dfiles = []
+        dpfiles = []
+        lfiles = []
+        containers = Utility.read_geojson(address, containers_file)
+        doors = Utility.read_geojson(address, doors_file)
+        generate_dpoints = False
+        if dpoints_file is None:
+            generate_dpoints = True
+            dpoints = None
+        else:
+            dpoints = Utility.read_geojson(address, dpoints_file)
+        landmarks = Utility.read_geojson(address, landmarks_file)
+
+        for container in containers['features']:
+            name = container['properties']['name']
+            doors_features = []
+            for d in doors['features']:
+                if d['properties']['container1'] == name or d['properties']['container2'] == name:
+                    doors_features.append(d)
+            doors_features = FeatureCollection(doors_features)
+            landmarks_features = []
+            for l in landmarks['features']:
+                if l['properties']['container'] == name:
+                    landmarks_features.append(l)
+            landmarks_features = FeatureCollection(landmarks_features)
+
+            c_polygon = MultiPolygon([[container['geometry']['coordinates'][0][0]]])
+            polygon_features = FeatureCollection([Feature(geometry=c_polygon, properties=container['properties'])])
+
+            c_holes_features = []
+            for i in range(1, len(container['geometry']['coordinates'][0])):
+                coords = container['geometry']['coordinates'][0][i]
+                # coords.reverse()
+                c_holes_features.append(Feature(geometry=MultiPolygon([[coords]]), properties={'id':i}))
+            holes_features = FeatureCollection(c_holes_features)
+            with open('{0}{1}-pfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+                dump(polygon_features, fp)
+            pfiles.append('{0}{1}-pfile.geojson'.format(address,name))
+            with open('{0}{1}-hfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+                dump(holes_features, fp)
+            hfiles.append('{0}{1}-hfile.geojson'.format(address,name))
+            with open('{0}{1}-lfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+                dump(landmarks_features, fp)
+            lfiles.append('{0}{1}-lfile.geojson'.format(address,name))
+            with open('{0}{1}-dfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+                dump(doors_features, fp)
+            dfiles.append('{0}{1}-dfile.geojson'.format(address,name))
+            dpoint_features = []
+            if generate_dpoints:
+                container_shape = shapely.geometry.shape(container['geometry'])
+                skel = Utility.generate_skeleton(polygon_features,
+                                                 holes_features['features'])
+                dpoint_features = Utility.extract_decision_points(container_shape, skel)
+            else:
+                for dp in dpoints['features']:
+                    if dp['properties']['container'] == name:
+                        dpoint_features.append(dp)
+                dpoint_features = FeatureCollection(dpoint_features)
+            with open('{0}{1}-dpfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+                dump(dpoint_features, fp)
+            dpfiles.append('{0}{1}-dpfile.geojson'.format(address,name))
+        return pfiles, hfiles, dfiles, dpfiles, lfiles
+
     def cviewgraph(self, cidx):
         container = self.containers[cidx]
         isovist_object = Isovist(container.boundary, container.holes, container.doors,
@@ -25,12 +94,22 @@ class IndoorEnvironment:
 
 if __name__ == '__main__':
     # test environment
-    address = 'envs/hypo/'
-    polygon_files = ['hypo_env.geojson']
-    holes_files = ['hypo_holes.geojson']
-    doors_files = ['hypo_doors.geojson']
-    dpoints_files = ['hypo_dpoints.geojson']
-    landmarks_files = ['hypo_landmarks.geojson']
+    # address = 'envs/hypo/'
+    # polygon_files = ['hypo_env.geojson']
+    # holes_files = ['hypo_holes.geojson']
+    # doors_files = ['hypo_doors.geojson']
+    # dpoints_files = ['hypo_dpoints.geojson']
+    # landmarks_files = ['hypo_landmarks.geojson']
+    address = 'envs/mc5/'
+    IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
+    container = 'Workplace'
+    polygon_files = ['{}-pfile.geojson'.format(container)]
+    holes_files = ['{}-hfile.geojson'.format(container)]
+    doors_files = ['{}-dfile.geojson'.format(container)]
+    dpoints_files = ['{}-dpfile.geojson'.format(container)]
+    # dpoints_files = [None]
+    landmarks_files = ['{}-lfile.geojson'.format(container)]
+
 
     # create an indoor environment
     ie = IndoorEnvironment(address, polygon_files, holes_files, doors_files, dpoints_files, landmarks_files)
@@ -39,7 +118,7 @@ if __name__ == '__main__':
     vg, isovist_object = ie.cviewgraph(0)
 
     # calculate shortest path and generate verbal description
-    vp, pv= vg.shortest_path_regions(38, 56)
+    vp, pv= vg.shortest_path_regions(2, len(vg.regions_list)-1)
 
     # derive door-to-door visibility graph (doors and decision points)
     connected, dtd_graph = vg.generate_door_to_door_graph(isovist_object)
@@ -54,7 +133,7 @@ if __name__ == '__main__':
     # derive place graph
     place_graph = vg.generate_place_graph(isovist_object)
     pg_l2_2 = Utility.create_subgraph(place_graph, 'landmark 2', 2)
-    pg_g7_2 = Utility.create_subgraph(place_graph, 'gateway 7', 2)
+    pg_g7_2 = Utility.create_subgraph(place_graph, 'gateway 3', 2)
 
     input('Press Enter: Describe the shortest path')
     plotter = Plotter()
