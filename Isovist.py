@@ -19,14 +19,18 @@ class Isovist:
         self.holes_shape = []
         self.holes_x = []
         self.holes_y = []
-        for h in holes: # todo: check whether it's counter clockwise or not -- if not: False -> True
-            self.holes_list.append(Utility.reformat_polygon(h['geometry']['coordinates'][0][0], False))
+        for h in holes:
+            if Utility.is_poly_cw(h['geometry']['coordinates'][0][0]):
+                self.holes_list.append(Utility.reformat_polygon(h['geometry']['coordinates'][0][0], True))
+            else:
+                self.holes_list.append(Utility.reformat_polygon(h['geometry']['coordinates'][0][0], False))
             h_x, h_y = Utility.save_print_geojson(h['geometry']['coordinates'][0][0])
             self.holes_x.append(h_x)
             self.holes_y.append(h_y)
             self.holes_shape.append(shape(h['geometry']).geoms[0])
 
         self.env = Utility.create_env(self.space_poly, self.holes_list)
+        print('Container environment is valid: {}'.format(self.env.is_valid()))
 
         self.door_points = []
         for d in doors:

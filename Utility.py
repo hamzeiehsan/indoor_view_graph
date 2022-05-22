@@ -190,3 +190,15 @@ class Utility:
     @staticmethod
     def create_subgraph(graph, node, radius, undirected=True):
         return nx.ego_graph(graph, node, radius=radius, undirected=undirected)
+
+
+    @staticmethod
+    def is_poly_cw(list_point):
+        summation = 0
+        for idx, p in enumerate(list_point):
+            if idx < len(list_point) - 1:
+                p2 = list_point[idx + 1]
+                summation += (p2[0] - p[0])*(p2[1] + p[1])
+        if summation > 0:
+            return True
+        return False

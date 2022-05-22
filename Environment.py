@@ -94,21 +94,21 @@ class IndoorEnvironment:
 
 if __name__ == '__main__':
     # test environment
-    # address = 'envs/hypo/'
-    # polygon_files = ['hypo_env.geojson']
-    # holes_files = ['hypo_holes.geojson']
-    # doors_files = ['hypo_doors.geojson']
-    # dpoints_files = ['hypo_dpoints.geojson']
-    # landmarks_files = ['hypo_landmarks.geojson']
-    address = 'envs/mc5/'
-    IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
-    container = 'Workplace'
-    polygon_files = ['{}-pfile.geojson'.format(container)]
-    holes_files = ['{}-hfile.geojson'.format(container)]
-    doors_files = ['{}-dfile.geojson'.format(container)]
-    dpoints_files = ['{}-dpfile.geojson'.format(container)]
-    # dpoints_files = [None]
-    landmarks_files = ['{}-lfile.geojson'.format(container)]
+    address = 'envs/hypo/'
+    polygon_files = ['hypo_env.geojson']
+    holes_files = ['hypo_holes.geojson']
+    doors_files = ['hypo_doors.geojson']
+    dpoints_files = ['hypo_dpoints.geojson']
+    landmarks_files = ['hypo_landmarks.geojson']
+    # address = 'envs/mc5/'
+    # IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
+    # container = 'Workplace'
+    # polygon_files = ['{}-pfile.geojson'.format(container)]
+    # holes_files = ['{}-hfile.geojson'.format(container)]
+    # doors_files = ['{}-dfile.geojson'.format(container)]
+    # dpoints_files = ['{}-dpfile.geojson'.format(container)]
+    ## dpoints_files = [None]
+    # landmarks_files = ['{}-lfile.geojson'.format(container)]
 
 
     # create an indoor environment
