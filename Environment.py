@@ -88,7 +88,9 @@ class IndoorEnvironment:
         container = self.containers[cidx]
         isovist_object = Isovist(container.boundary, container.holes, container.doors,
                                  container.dpoints, container.landmarks)
-        vg = ViewGraph(isovist_object)
+        container_info = {'name': container.name, 'door_info': container.door_names,
+                          'landmark_info': container.landmark_names}
+        vg = ViewGraph(isovist_object, container_info)
         return vg, isovist_object
 
     def construct_view_graph(self):

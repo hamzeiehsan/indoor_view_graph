@@ -13,9 +13,12 @@ from Utility import Utility
 
 
 class ViewGraph:
-    def __init__(self, isovist_object):
-        self.graph = None
+    def __init__(self, isovist_object, container_info):
+        self.name = container_info['name']
+        self.door_info = container_info['door_info']
+        self.landmark_info = container_info['landmark_info']
         self.calculate(isovist_object)
+        self.container_info = container_info
 
     def save(self, address):
         nx.write_graphml(self.rviewgraph, address)
