@@ -196,31 +196,6 @@ if __name__ == '__main__':
     input('Press Enter: Place graph generation; visualize for all and only for landmark 2')
     plotter.write_graph('placegraph.html', place_graph)
     plotter.write_graph('placegraph_l2_2.html', pg_l2_2)
-    plotter.refresh()
-    ls = []
-    gs = []
-    for n in list(pg_l2_2.nodes):
-        if 'landmark ' in n:
-            lid = int(n.replace('landmark ', ''))
-            ls.append(isovist_object.landmarks_points[lid])
-        elif 'gateway ' in n:
-            gid = int(n.replace('gateway ', ''))
-            gs.append(isovist_object.door_points[gid])
-    plotter.add_points(ls, label='graph (landmarks)', color='ko')
-    plotter.add_points(gs, label='graph (gateways)', color='mo')
-    plotter.show()
 
     plotter.write_graph('placegraph_g7_2.html', pg_g7_2)
     plotter.refresh()
-    ls = []
-    gs = []
-    for n in list(pg_g7_2.nodes):
-        if 'landmark ' in n:
-            lid = int(n.replace('landmark ', ''))
-            ls.append(isovist_object.landmarks_points[lid])
-        elif 'gateway ' in n:
-            gid = int(n.replace('gateway ', ''))
-            gs.append(isovist_object.door_points[gid])
-    plotter.add_points(ls, label='graph (landmarks)', color='ko')
-    plotter.add_points(gs, label='graph (gateways)', color='mo')
-    plotter.show()
