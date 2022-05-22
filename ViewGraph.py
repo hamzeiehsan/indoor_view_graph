@@ -101,6 +101,8 @@ class ViewGraph:
                         self.adjacency_matrix[j] = [i]
                     else:
                         self.adjacency_matrix[j].append(i)
+        if len(self.adjacency_matrix) == 0:
+            self.adjacency_matrix[0] = []
 
         # constructing view graph for decomposed regions
         print('finding regions that contains doors/gateways and decision points')
@@ -425,16 +427,6 @@ class ViewGraph:
             decomposed.append({'ids': [rid1, rid2], 'view': [disappear_points[len(disappear_points) - 1], view[1]]})
         else:
             decomposed = [{'ids': ids, 'view': view}]
-        if plot:
-            point_dict = {'go': [], 'ro': [], 'bo': []}
-            for idx, point in points.items():
-                if idx.startswith('landmark'):
-                    point_dict['go'].append(point)
-                else:
-                    point_dict['ro'].append(point)
-            for point in disappear_points:
-                point_dict['bo'].append(point)
-
         return decomposed
 
     def disappear_shift(self, vid, d, fov=Parameters.fov):

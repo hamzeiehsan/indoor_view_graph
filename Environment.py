@@ -91,31 +91,44 @@ class IndoorEnvironment:
         vg = ViewGraph(isovist_object)
         return vg, isovist_object
 
+    def construct_view_graph(self):
+        vgs = []
+        isovist_objects = []
+        for idx, container in enumerate(self.containers):
+            print('\n*******************************************\nAnalyzing: {}'.format(container.name))
+            vg, isovist_object = self.cviewgraph(idx)
+            vgs.append(vg)
+            isovist_objects.append(isovist_object)
+        return vgs, isovist_objects
+
+
 
 if __name__ == '__main__':
     # test environment
-    address = 'envs/hypo/'
-    polygon_files = ['hypo_env.geojson']
-    holes_files = ['hypo_holes.geojson']
-    doors_files = ['hypo_doors.geojson']
-    dpoints_files = ['hypo_dpoints.geojson']
-    landmarks_files = ['hypo_landmarks.geojson']
-    # address = 'envs/mc5/'
-    # IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
-    # container = 'Workplace'
-    # polygon_files = ['{}-pfile.geojson'.format(container)]
-    # holes_files = ['{}-hfile.geojson'.format(container)]
-    # doors_files = ['{}-dfile.geojson'.format(container)]
-    # dpoints_files = ['{}-dpfile.geojson'.format(container)]
-    ## dpoints_files = [None]
-    # landmarks_files = ['{}-lfile.geojson'.format(container)]
+    # address = 'envs/hypo/'
+    # polygon_files = ['hypo_env.geojson']
+    # holes_files = ['hypo_holes.geojson']
+    # doors_files = ['hypo_doors.geojson']
+    # dpoints_files = ['hypo_dpoints.geojson']
+    # landmarks_files = ['hypo_landmarks.geojson']
+    address = 'envs/mc5/'
+    IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
+    containers = ['E_Corridor', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet']
+    polygon_files = ['{}-pfile.geojson'.format(container) for container in containers]
+    holes_files = ['{}-hfile.geojson'.format(container) for container in containers]
+    doors_files = ['{}-dfile.geojson'.format(container) for container in containers]
+    dpoints_files = ['{}-dpfile.geojson'.format(container) for container in containers]
+    # dpoints_files = [None for container in containers]
+    landmarks_files = ['{}-lfile.geojson'.format(container) for container in containers]
 
 
     # create an indoor environment
     ie = IndoorEnvironment(address, polygon_files, holes_files, doors_files, dpoints_files, landmarks_files)
 
     # create view graph
-    vg, isovist_object = ie.cviewgraph(0)
+    vgs, isovist_objects = ie.construct_view_graph()
+    vg = vgs[0]
+    isovist_object = isovist_objects[0]
 
     # calculate shortest path and generate verbal description
     vp, pv= vg.shortest_path_regions(2, len(vg.regions_list)-1)
