@@ -37,6 +37,6 @@ class Container:
                 if 'properties' in l.keys() and 'name' in l['properties'].keys():
                     self.landmark_names.append(l['properties']['name'])
                 else:
-                    self.landmark_names.append('landmark {}'.format(self.landmarks.index(l)))
+                    self.landmark_names.append('the landmark {}'.format(self.landmarks.index(l)))
         else:
             self.landmarks = []
