@@ -6,8 +6,10 @@ class Container:
         bound = Utility.read_geojson(address, polygon_file)['features'][0]
         self.boundary = bound['geometry']['coordinates'][0][0]
         self.name = 'Container'
+        self.name_id = 'Container'
         if 'properties' in bound.keys() and 'full_name' in bound['properties'].keys():
             self.name = bound['properties']['full_name']
+            self.name_id = bound['properties']['name']
         if holes_file is not None:
             self.holes = Utility.read_geojson(address, holes_file)['features']
         else:
@@ -16,7 +18,7 @@ class Container:
         self.door_names = []
         for d in self.doors:
             if 'properties' in d.keys() and 'container1' in d['properties'].keys():
-                if d['properties']['container1'] != self.name:
+                if d['properties']['container1'] != self.name_id:
                     self.door_names.append('the door to {}'.format(d['properties']['container1']))
                 else:
                     self.door_names.append('the door to {}'.format(d['properties']['container2']))

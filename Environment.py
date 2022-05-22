@@ -104,7 +104,6 @@ class IndoorEnvironment:
         return vgs, isovist_objects
 
 
-
 if __name__ == '__main__':
     # test environment
     # address = 'envs/hypo/'
@@ -148,7 +147,7 @@ if __name__ == '__main__':
     # derive place graph
     place_graph = vg.generate_place_graph(isovist_object)
     pg_l2_2 = Utility.create_subgraph(place_graph, 'landmark 2', 2)
-    pg_g7_2 = Utility.create_subgraph(place_graph, 'gateway 3', 2)
+    pg_g7_2 = Utility.create_subgraph(place_graph, 'the door to M_Toilet', 2)
 
     input('Press Enter: Describe the shortest path')
     plotter = Plotter()

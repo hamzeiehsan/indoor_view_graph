@@ -408,7 +408,7 @@ class ViewGraph:
                                                   isovist_object.door_points[dix].y())
         landmark_signature = self.view_vision_signature(vv, door_points=isovist_object.landmarks_points)
         for lix in landmark_signature:
-            points['landmark {}'.format(lix)] = Point(isovist_object.landmarks_points[lix].x(),
+            points[self.landmark_info[lix]] = Point(isovist_object.landmarks_points[lix].x(),
                                                       isovist_object.landmarks_points[lix].y())
         orders = self.ego_order(view, points)
         disappear_points = []
@@ -472,10 +472,10 @@ class ViewGraph:
         points = {}
         for d in door_signature:
             d_point = isovist_object.door_points[d]
-            points['gateway {}'.format(d)] = Point(d_point.x(), d_point.y())
+            points[self.door_info[d]] = Point(d_point.x(), d_point.y())
         for l in landmark_signature:
             l_point = isovist_object.landmarks_points[l]
-            points['landmark {}'.format((l))] = Point(l_point.x(), l_point.y())
+            points[self.landmark_info[l]] = Point(l_point.x(), l_point.y())
         ego_rels = self.egocentric_relationships(view_points, points)
         return ego_rels
 
@@ -678,10 +678,10 @@ class ViewGraph:
             attrs = {}
             if dtype == 'dt':
                 dtype = 'decision point'
-                attrs = {'type': dtype, 'group': 1, 'label': 'gateway {}'.format(d)}
+                attrs = {'type': dtype, 'group': 1, 'label': self.door_info[d]}
             else:
                 dtype = 'door'
-                attrs = {'type': dtype, 'group': 2, 'label': 'gateway {}'.format(d)}
+                attrs = {'type': dtype, 'group': 2, 'label': self.door_info[d]}
             did_attributes.append((d, attrs))
 
         dtdgraph.add_nodes_from(did_attributes)
@@ -726,7 +726,7 @@ class ViewGraph:
         connections_details = {}
 
         attrs = {
-            node: {'label': 'gateway {}'.format(node + isovist_object.door_idx), 'idx': node + isovist_object.door_idx,
+            node: {'label': self.door_info[node + isovist_object.door_idx], 'idx': node + isovist_object.door_idx,
                    'group': 'decision points'} for node in range(len(T.nodes))}
         nx.set_node_attributes(T, attrs)
 
@@ -867,11 +867,12 @@ class ViewGraph:
                 pids['place{}'.format(pcounter)] = {'type': 'door', 'group':2}
             else:
                 pids['place{}'.format(pcounter)] = {'type': 'decision point', 'group':2}
-            references['gateway {}'.format(d)] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3}
+            references[self.door_info[d]] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3}
             pcounter+=1
         for l, landmark in enumerate(isovist_object.landmarks_points):
             pids['place{}'.format(pcounter)] = {'type': 'landmark', 'group':2}
-            references['landmark {}'.format(l)] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3}
+            references[self.landmark_info[l]] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3,
+                                                 'label': self.landmark_info[l]}
             pcounter+=1
         sids = {
             # 'front': {'relation': 'front', 'family': 'relative direction'},
