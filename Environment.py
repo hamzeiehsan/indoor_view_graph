@@ -187,17 +187,17 @@ if __name__ == '__main__':
     address = 'envs/mc5/'
     pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
         address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
-    # containers = ['E_Corridor', 'Active_Hub', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet']
-    # pfiles = ['{}-pfile.geojson'.format(container) for container in containers]
-    # hfiles = ['{}-hfile.geojson'.format(container) for container in containers]
-    # dfiles = ['{}-dfile.geojson'.format(container) for container in containers]
-    # dpfiles = ['{}-dpfile.geojson'.format(container) for container in containers]
-    # # dpoints_files = [None for container in containers]
-    # lfiles = ['{}-lfile.geojson'.format(container) for container in containers]
+    containers = ['E_Corridor', 'Active_Hub', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet']
+    pfiles = ['{}-pfile.geojson'.format(container) for container in containers]
+    hfiles = ['{}-hfile.geojson'.format(container) for container in containers]
+    dfiles = ['{}-dfile.geojson'.format(container) for container in containers]
+    dpfiles = ['{}-dpfile.geojson'.format(container) for container in containers]
+    # dpoints_files = [None for container in containers]
+    lfiles = ['{}-lfile.geojson'.format(container) for container in containers]
 
 
     # create an indoor environment
-    ie = IndoorEnvironment('', pfiles, hfiles, dfiles, dpfiles, lfiles)
+    ie = IndoorEnvironment(address, pfiles, hfiles, dfiles, dpfiles, lfiles)
 
     # create view graph
     vgs, isovist_objects = ie.construct_view_graph()
