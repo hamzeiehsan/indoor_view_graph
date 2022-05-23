@@ -10,10 +10,17 @@ from geojson import MultiPolygon, Feature, FeatureCollection, dump
 class IndoorEnvironment:
     def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):  # todo: link between containers
         self.containers = []
+        self.container_info = {}
+        self.containers_names = []
+        self.cviewgraphs = []
+        self.isovist_objects = []
+        self.graph = None
         if len(pfiles) == len(hfiles) == len(dfiles) == len(dpfiles) == len(lfiles):
             print('environment files -- count is valid')
             for idx, pfile in enumerate(pfiles):
-                self.containers.append(Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx]))
+                container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
+                self.containers.append(container)
+                self.containers_names.append(container.name)
         else:
             print('environment files -- count is invalid')
 
@@ -90,6 +97,7 @@ class IndoorEnvironment:
                                  container.dpoints, container.landmarks)
         container_info = {'name': container.name, 'door_info': container.door_names,
                           'landmark_info': container.landmark_names}
+        self.container_info[container.name_id] = container_info
         vg = ViewGraph(isovist_object, container_info)
         return vg, isovist_object
 
@@ -101,7 +109,65 @@ class IndoorEnvironment:
             vg, isovist_object = self.cviewgraph(idx)
             vgs.append(vg)
             isovist_objects.append(isovist_object)
+
+        connected_containers = []
+        for idx, container in enumerate(self.containers):
+            c_name = container.name
+            if idx == 0:
+                self.graph = vgs[idx].rviewgraph.copy()
+                connected_containers.append(container)
+            else:
+                self.graph = Utility.merge_graphs(self.graph, vgs[idx].rviewgraph)
+                for idx2, container2 in enumerate(connected_containers):
+                    c_name2 = container2.name
+                    for did, d in enumerate(container.doors):
+                        if d['properties']['container1'] == container2.name_id or \
+                            d['properties']['container2'] == container2.name_id:
+                            did2 = -1
+                            for tdid2, d2 in enumerate(container2.doors):
+                                if d['properties']['id'] == d2['properties']['id']:
+                                    did2 = tdid2
+                                    break
+                            if did2 != -1:
+                                vto1 = '{0}-V{1}'.format(c_name, vgs[idx].to_door_vid[did])
+                                vto2 = '{0}-V{1}'.format(c_name2, vgs[idx2].to_door_vid[did2])
+                                vfrom1 = '{0}-V{1}'.format(c_name, vgs[idx].views_doors_info[did])
+                                vfrom2 = '{0}-V{1}'.format(c_name2, vgs[idx2].views_doors_info[did2])
+                                self.graph.add_edge(vto2, vfrom1, weight=0,
+                                                    label='Enter {}'.format(container2.door_names[did2]),
+                                                    action='enter')
+                                self.graph.add_edge(vto1, vfrom2, weight=0,
+                                                    label='Enter {}'.format(container.door_names[did]),
+                                                    action='enter')
+                connected_containers.append(container)
+        self.cviewgraphs = vgs
+        self.isovist_objects = isovist_objects
         return vgs, isovist_objects
+
+    def shortest_path(self, container_name1, region_id1, container_name2, region_id2):
+        idx1 = self.containers_names.index(container_name1)
+        idx2 = self.containers_names.index(container_name2)
+        container1 = self.containers[idx1]
+        container2 = self.containers[idx2]
+        vg1 = self.cviewgraphs[idx1]
+        vg2 = self.cviewgraphs[idx2]
+        vid1 = '{0}-V{1}'.format(container1.name, vg1.from_region_ids[region_id1])
+        vid2 = '{0}-V{1}'.format(container2.name, vg2.from_region_ids[region_id2])
+        spath = Utility.shortest_path(self.graph, vid1, vid2)
+        path_view = []
+        current = None
+        for view in spath:
+            container_name = view.split('-V')[0]
+            cid = self.containers_names.index(container_name)
+            vid = int(view.split('-V')[1])
+            path_view.append(self.cviewgraphs[cid].rviews[vid])
+            if current is None:
+                current = container_name
+            if current != container_name:
+                print('enter: {}'.format(container_name))
+                current = container_name
+        return spath, path_view
+
 
 
 if __name__ == '__main__':
@@ -114,7 +180,7 @@ if __name__ == '__main__':
     # landmarks_files = ['hypo_landmarks.geojson']
     address = 'envs/mc5/'
     IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
-    containers = ['E_Corridor', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet']
+    containers = ['Active_Hub', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet', 'E_Corridor']
     polygon_files = ['{}-pfile.geojson'.format(container) for container in containers]
     holes_files = ['{}-hfile.geojson'.format(container) for container in containers]
     doors_files = ['{}-dfile.geojson'.format(container) for container in containers]
@@ -147,7 +213,7 @@ if __name__ == '__main__':
     # derive place graph
     place_graph = vg.generate_place_graph(isovist_object)
     pg_l2_2 = Utility.create_subgraph(place_graph, 'the landmark 2', 2)
-    pg_g7_2 = Utility.create_subgraph(place_graph, 'the door to M_Toilet', 2)
+    pg_g7_2 = Utility.create_subgraph(place_graph, 'the door to E_Corridor', 2)
 
     input('Press Enter: Describe the shortest path')
     plotter = Plotter()

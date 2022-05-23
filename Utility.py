@@ -185,7 +185,9 @@ class Utility:
                                 properties={'id': start_id, 'type': 'dt'})
             start_id += 1
             dpoints.append(f)
-        return geojson.FeatureCollection(dpoints)
+        if len(dpoints) > 1:
+            return geojson.FeatureCollection(dpoints)
+        return geojson.FeatureCollection([])
 
     @staticmethod
     def create_subgraph(graph, node, radius, undirected=True):
@@ -202,3 +204,11 @@ class Utility:
         if summation > 0:
             return True
         return False
+
+    @staticmethod
+    def merge_graphs(graph1, graph2):
+        return nx.operators.union(graph1, graph2)
+
+    @staticmethod
+    def shortest_path(graph, n1, n2):
+        return nx.shortest_path(graph, n1, n2)

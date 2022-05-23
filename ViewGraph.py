@@ -139,9 +139,14 @@ class ViewGraph:
         self.rview_ls = {}
         counter = 0
         self.views_doors_info = {}
-        for idx, signature in enumerate(self.signatures):
+        self.to_door_vid = {}
+
+
+        for idx, signature in enumerate(self.signatures):  # todo issues!!! center+doors/gates --
+                                                                # todo 1. iterate among
+                                                                # todo 2. iterate to signature
+                                                                # todo 3. iterate to all in neighbours (center+doors)
             # based on signature --> direct access (reach)
-            block = None
             neighbours = self.adjacency_matrix[idx]
             for rid, pids in self.regions_doors_info.items():
                 for pid in pids:
@@ -180,12 +185,49 @@ class ViewGraph:
                     self.rviews[counter] = [centroid, point1]
                     self.rview_ids[counter] = [idx, idx]
                     self.rview_ls[counter] = LineString([centroid, point1])
+                    self.to_door_vid[pid1] = counter
                     counter += 1
                     self.rviews[counter] = [point1, centroid]
                     self.rview_ids[counter] = [idx, idx]
                     self.rview_ls[counter] = LineString([point1, centroid])
                     self.views_doors_info[pid1] = counter
                     counter += 1
+
+                    # newly added
+                    # neighbours = self.adjacency_matrix[idx]
+                    # for rid, pids in self.regions_doors_info.items():
+                    #     for pid in pids:
+                    #         if rid != idx and pid in signature and rid not in neighbours:
+                    #             view_line = LineString([point1, self.regions_info[rid]])
+                    #             if isovist_object.view_intersects_boundary(view_line):
+                    #                 continue
+                    #             self.rview_ids[counter] = [idx, rid]
+                    #             if isovist_object.view_intersects_holes(view_line):
+                    #                 self.rviews[counter] = [point1,
+                    #                                         Point(isovist_object.door_points[pid].x(),
+                    #                                               isovist_object.door_points[pid].y())]
+                    #                 self.rview_ls[counter] = LineString(
+                    #                     [point1,
+                    #                      Point(isovist_object.door_points[pid].x(),
+                    #                            isovist_object.door_points[pid].y())])
+                    #             else:
+                    #                 self.rviews[counter] = [point1, self.regions_info[rid]]
+                    #                 self.rview_ls[counter] = view_line
+                    #                 view_line = LineString(
+                    #                     [point1,
+                    #                      Point(isovist_object.door_points[pid].x(),
+                    #                            isovist_object.door_points[pid].y())])
+                    #                 if not isovist_object.view_intersects_holes(
+                    #                         view_line) and not isovist_object.view_intersects_boundary(view_line):
+                    #                     counter += 1
+                    #                     self.rview_ids[counter] = [idx, rid]
+                    #                     self.rviews[counter] = [point1,
+                    #                                             Point(isovist_object.door_points[pid].x(),
+                    #                                                   isovist_object.door_points[pid].y())]
+                    #                     self.rview_ls[counter] = view_line
+                    #             counter += 1
+                    #
+
                     for pid2 in pids:
                         if pid1 != pid2:
                             view_line = LineString([point1,
@@ -243,21 +285,21 @@ class ViewGraph:
         drview_ls = {}
         r_dr_mapping_ids = {}
         idx = 0
-        already_updated = []
         for vid_old in self.rview_ids.keys():
             vals = decomposed_views_dict[vid_old]
             r_dr_mapping_ids[vid_old] = []
-            for did, dvid in self.views_doors_info.items():
-                if dvid == vid_old and did not in already_updated:
-                    self.views_doors_info[did] = idx
-                    already_updated.append(did)
-                    break
+
             for val in vals:
                 drview_ids[idx] = val['ids']
                 drviews[idx] = val['view']
                 drview_ls[idx] = LineString(val['view'])
                 r_dr_mapping_ids[vid_old].append(idx)
                 idx += 1
+
+        for did, vid_old in self.views_doors_info.items():
+            self.views_doors_info[did] = r_dr_mapping_ids[vid_old][0]
+        for did, vid_old in self.to_door_vid.items():
+            self.to_door_vid[did] = r_dr_mapping_ids[vid_old][-1]
 
         self.from_region_ids = {}
         self.to_region_ids = {}
@@ -270,9 +312,9 @@ class ViewGraph:
                 break
 
         # constructing region view graph
-        print('constructing view graph for regions')
+        print('constructing view graph for regions')  # issue in here possibly TODO!!!!
         self.rviewgraph = nx.DiGraph()
-        self.rviewgraph.add_nodes_from(list(drview_ids.keys()))
+        self.rviewgraph.add_nodes_from(['{0}-V{1}'.format(self.name, idx) for idx in list(drview_ids.keys())])
         for vid, pids in self.rview_ids.items():
             dviews = [drviews[i] for i in r_dr_mapping_ids[vid]]
             dvids = [i for i in r_dr_mapping_ids[vid]]
@@ -282,18 +324,25 @@ class ViewGraph:
                 if vid != vid2:
                     dviews2 = [drviews[i] for i in r_dr_mapping_ids[vid2]]
                     dvids2 = [i for i in r_dr_mapping_ids[vid2]]
-
                     if pids[1] == pids2[0]:  # movement
                         if self.rviews[vid][1].distance(self.rviews[vid2][0]) < Parameters.epsilon:
-                            self.rviewgraph.add_edge(dvids[len(dvids) - 1], dvids2[0], weight=dv1, label='move')
+                            self.rviewgraph.add_edge(
+                                '{0}-V{1}'.format(self.name, dvids[len(dvids) - 1]),
+                                '{0}-V{1}'.format(self.name, dvids2[0]),
+                                weight=dv1, label='move')
                     elif pids[0] == pids2[0]:  # turn
                         if self.rviews[vid][0].distance(self.rviews[vid2][0]) < Parameters.epsilon:
-                            self.rviewgraph.add_edge(dvids[0], dvids2[0], weight=0, label='turn')
+                            self.rviewgraph.add_edge(
+                                '{0}-V{1}'.format(self.name, dvids[0]),
+                                '{0}-V{1}'.format(self.name, dvids2[0]),
+                                weight=0, label='turn')
                 for i in range(1, len(dvids)):
                     v0 = dviews[i - 1]
                     v1 = dviews[i]
                     dv0 = Utility.calculate_distance(v0[0], v0[1])
-                    self.rviewgraph.add_edge(dvids[i - 1], dvids[i], weight=dv0, label='move')
+                    self.rviewgraph.add_edge(
+                        '{0}-V{1}'.format(self.name, dvids[i - 1]),
+                        '{0}-V{1}'.format(self.name, dvids[i]), weight=dv0, label='move')
 
         self.rview_ids = drview_ids
         self.rviews = drviews
@@ -320,7 +369,7 @@ class ViewGraph:
                     r_action[info['order']] = object
                 else:
                     f_action[info['order']] = object
-            self.v_attributes[vid] = {'l_action': [l[1] for l in sorted(l_action.items())],
+            self.v_attributes['{0}-V{1}'.format(self.name, vid)] = {'l_action': [l[1] for l in sorted(l_action.items())],
                                       'f_action': [f[1] for f in sorted(f_action.items())],
                                       'r_action': [r[1] for r in sorted(r_action.items())]}
         nx.set_node_attributes(self.rviewgraph, self.v_attributes)
@@ -331,23 +380,25 @@ class ViewGraph:
         self.r_attributes = {}
         for vid in self.rviews.keys():
             bearing1 = Utility.calculate_bearing(self.rviews[vid])
-            for vid2, attributes in dict(self.rviewgraph[vid]).items():
+            for vv2, attributes in dict(self.rviewgraph['{0}-V{1}'.format(self.name, vid)]).items():
                 if attributes['label'] == 'move':
+                    vid2 = int(vv2.replace('{0}-V'.format(self.name), ''))
                     bearing2 = Utility.calculate_bearing(self.rviews[vid2])
+                    vv1 = '{0}-V{1}'.format(self.name, vid)
                     if abs(bearing1 - bearing2) <= Parameters.alpha:
-                        self.r_attributes[(vid, vid2)] = {'action': 'follow'}
+                        self.r_attributes[(vv1, vv2)] = {'action': 'follow'}
                     elif 180 - Parameters.alpha <= abs(bearing1 - bearing2) <= 180 + Parameters.alpha:
-                        self.r_attributes[(vid, vid2)] = {'action': 'turn back'}
+                        self.r_attributes[(vv1, vv2)] = {'action': 'turn back'}
                     elif bearing1 > bearing2:
                         if bearing1 - bearing2 > 180 + Parameters.alpha:
-                            self.r_attributes[(vid, vid2)] = {'action': 'veer left'}
+                            self.r_attributes[(vv1, vv2)] = {'action': 'veer left'}
                         else:
-                            self.r_attributes[(vid, vid2)] = {'action': 'turn left'}
+                            self.r_attributes[(vv1, vv2)] = {'action': 'turn left'}
                     else:
                         if bearing2 - bearing1 > 180 - Parameters.alpha:
-                            self.r_attributes[(vid, vid2)] = {'action': 'veer right'}
+                            self.r_attributes[(vv1, vv2)] = {'action': 'veer right'}
                         else:
-                            self.r_attributes[(vid, vid2)] = {'action': 'turn right'}
+                            self.r_attributes[(vv1, vv2)] = {'action': 'turn right'}
         nx.set_edge_attributes(self.rviewgraph, self.r_attributes)
 
     def vision_triangle(self, view_id):
@@ -448,7 +499,11 @@ class ViewGraph:
             vid1 = self.from_region_ids[rid1]
             vid2 = self.from_region_ids[rid2]
 
-        vpath = nx.shortest_path(self.rviewgraph, vid1, vid2, weight='weight')
+        vpath = nx.shortest_path(self.rviewgraph, '{0}-V{1}'.format(self.name, vid1),
+                                 '{0}-V{1}'.format(self.name, vid2),
+                                 weight='weight')
+        vpath_temp = [int(vv.replace('{0}-V'.format(self.name), '')) for vv in vpath]
+        vpath = vpath_temp
         path_view = []
 
         if not isvid:
@@ -606,7 +661,7 @@ class ViewGraph:
         instructions = []
         v_attrs = []
         for v in vpath:
-            v_attr = self.v_attributes[v]
+            v_attr = self.v_attributes['{0}-V{1}'.format(self.name, v)]
             v_attrs.append(v_attr)
 
         start = v_attrs[0]
@@ -620,7 +675,8 @@ class ViewGraph:
         r_attrs = []
         for idx, v in enumerate(vpath):
             if idx != len(vpath) - 1:
-                r_attr = self.r_attributes[(v, vpath[idx + 1])]
+                r_attr = self.r_attributes[('{0}-V{1}'.format(self.name, v),
+                                            '{0}-V{1}'.format(self.name, vpath[idx + 1]))]
                 r_attrs.append(r_attr)
         temp = []
         temp_vids = []
@@ -710,8 +766,10 @@ class ViewGraph:
                         and vid1 != vid2:
                     if indirect_access or did2 in self.signatures[rid1]:
                         vp, pv = self.shortest_path_regions(vid1, vid2, isvid=True)
+                        vp_tmp = ['{0}-V{1}'.format(self.name, v) for v in vp]
                         all_vps_info[len(all_vps)] = {'from': did1, 'to': did2, 'index': len(all_vps),
-                                                      'length': nx.path_weight(self.rviewgraph, vp, weight='weight')}
+                                                      'length': nx.path_weight(self.rviewgraph, vp_tmp,
+                                                                               weight='weight')}
                         path_graph[did1 - isovist_object.door_idx][did2 - isovist_object.door_idx]['weight'] = \
                             all_vps_info[len(all_vps)]['length']
                         all_vps.append(vp)
@@ -763,7 +821,8 @@ class ViewGraph:
                 for vid in vids:
                     try:
                         vp, pv = self.shortest_path_regions(dvid, vid, True)
-                        w = nx.path_weight(self.rviewgraph, vp, weight='weight')
+                        vp_temp = ['{0}-V{1}'.format(self.name, idx) for idx in vp]
+                        w = nx.path_weight(self.rviewgraph, vp_temp, weight='weight')
                         if w < max_weight:
                             max_weight = w
                             selected_vp = vp
@@ -776,19 +835,6 @@ class ViewGraph:
 
         return all_vps, all_pvs, spt_vps, spt_pvs, T
 
-    def tsp(self, isovist_object, graph=None, nodes=None, only_dt=True):
-        if graph is None:
-            graph = self.rviewgraph
-            nodes = []
-            for did, props in isovist_object.door_props.items():
-                if props['type'] == 'dt' or not only_dt:
-                    nodes.append(self.views_doors_info[did])
-        vp = nx.approximation.traveling_salesman_problem(graph, nodes=nodes, weight='weight')
-        if graph != self.rviewgraph:
-            pv = None
-        else:
-            pv = [self.rviews[vid] for vid in vp]
-        return vp, pv
 
     @staticmethod
     def generate_titles(dict_dict):
