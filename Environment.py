@@ -18,9 +18,10 @@ class IndoorEnvironment:
         if len(pfiles) == len(hfiles) == len(dfiles) == len(dpfiles) == len(lfiles):
             print('environment files -- count is valid')
             for idx, pfile in enumerate(pfiles):
-                container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
-                self.containers.append(container)
-                self.containers_names.append(container.name)
+                if 'R5332' not in pfile and 'Workplace' not in pfile:
+                    container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
+                    self.containers.append(container)
+                    self.containers_names.append(container.name)
         else:
             print('environment files -- count is invalid')
 
@@ -184,18 +185,19 @@ if __name__ == '__main__':
     # dpoints_files = ['hypo_dpoints.geojson']
     # landmarks_files = ['hypo_landmarks.geojson']
     address = 'envs/mc5/'
-    IndoorEnvironment.reformat(address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
-    containers = ['Active_Hub', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet', 'E_Corridor']
-    polygon_files = ['{}-pfile.geojson'.format(container) for container in containers]
-    holes_files = ['{}-hfile.geojson'.format(container) for container in containers]
-    doors_files = ['{}-dfile.geojson'.format(container) for container in containers]
-    dpoints_files = ['{}-dpfile.geojson'.format(container) for container in containers]
-    # dpoints_files = [None for container in containers]
-    landmarks_files = ['{}-lfile.geojson'.format(container) for container in containers]
+    pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
+        address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
+    # containers = ['E_Corridor', 'Active_Hub', 'UX_Lab', 'W_Toilet', 'M_Toilet', 'D_Toilet']
+    # pfiles = ['{}-pfile.geojson'.format(container) for container in containers]
+    # hfiles = ['{}-hfile.geojson'.format(container) for container in containers]
+    # dfiles = ['{}-dfile.geojson'.format(container) for container in containers]
+    # dpfiles = ['{}-dpfile.geojson'.format(container) for container in containers]
+    # # dpoints_files = [None for container in containers]
+    # lfiles = ['{}-lfile.geojson'.format(container) for container in containers]
 
 
     # create an indoor environment
-    ie = IndoorEnvironment(address, polygon_files, holes_files, doors_files, dpoints_files, landmarks_files)
+    ie = IndoorEnvironment('', pfiles, hfiles, dfiles, dpfiles, lfiles)
 
     # create view graph
     vgs, isovist_objects = ie.construct_view_graph()
@@ -218,7 +220,6 @@ if __name__ == '__main__':
     # derive place graph
     place_graph = vg.generate_place_graph(isovist_object)
     pg_l2_2 = Utility.create_subgraph(place_graph, 'the landmark 2', 2)
-    pg_g7_2 = Utility.create_subgraph(place_graph, 'the door to E_Corridor', 2)
 
     input('Press Enter: Describe the shortest path')
     plotter = Plotter()
@@ -267,6 +268,3 @@ if __name__ == '__main__':
     input('Press Enter: Place graph generation; visualize for all and only for landmark 2')
     plotter.write_graph('placegraph.html', place_graph)
     plotter.write_graph('placegraph_l2_2.html', pg_l2_2)
-
-    plotter.write_graph('placegraph_g7_2.html', pg_g7_2)
-    plotter.refresh()

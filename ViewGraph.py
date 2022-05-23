@@ -1,10 +1,10 @@
 import math
 import statistics
-
+from itertools import count as countfunc
 import geopandas as gpd
 import networkx as nx
 from numpy import tan
-from shapely.geometry import Point, LineString, LinearRing
+from shapely.geometry import Point, LineString
 from shapely.geometry import Polygon as Poly
 from shapely.ops import unary_union, polygonize, nearest_points
 
@@ -32,7 +32,7 @@ class ViewGraph:
         gdf = gpd.GeoDataFrame(geometry=overlay_regions)
         regions = list(gdf['geometry'])
         regions_area = [r.area for r in regions]
-        regions_area, regions = zip(*sorted(zip(regions_area, regions)))
+        regions_area, ccs, regions = zip(*sorted(zip(regions_area, countfunc(), regions)))
         self.regions_list = []
         merge_dict = {}
         skip = []
@@ -179,6 +179,8 @@ class ViewGraph:
                                 self.to_door_vids[contained[apid2]] = []
                             self.to_door_vids[contained[apid2]].append(counter)
                         counter += 1
+                        if self.name == 'Open Workplace' and counter == 80:
+                            print('wait')
 
                 # to neighbours
                 for nrid in neighbours:
@@ -206,6 +208,8 @@ class ViewGraph:
                                 self.to_door_vids[ncontained[napid]] = []
                             self.to_door_vids[ncontained[napid]].append(counter)
                         counter += 1
+                        if self.name == 'Open Workplace' and counter == 80:
+                            print('wait')
 
                 # to visible points not inside
                 for vpid in signature:
@@ -227,7 +231,8 @@ class ViewGraph:
                                 self.to_door_vids[vpid] = []
                             self.to_door_vids[vpid].append(counter)
                             counter += 1
-
+                            if self.name == 'Open Workplace' and counter == 80:
+                                print('wait')
         print('decompose views')
         decomposed_views_dict = {}
         c_views = 0

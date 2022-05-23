@@ -81,7 +81,7 @@ class Isovist:
             self.isovists_x_y.append([iso_x, iso_y])
             idx += 1
 
-    def isovist_calc(self, x, y):
+    def isovist_calc(self, x, y):  # todo there is a problem here with holes!!
         door = vis.Point(x, y)
         door.snap_to_boundary_of(self.env, Parameters.epsilon)
         door.snap_to_vertices_of(self.env, Parameters.epsilon)
