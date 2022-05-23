@@ -139,139 +139,228 @@ class ViewGraph:
         self.rview_ls = {}
         counter = 0
         self.views_doors_info = {}
-        self.to_door_vid = {}
+
+        self.to_door_vids = {}
+        self.from_door_vids = {}
 
 
-        for idx, signature in enumerate(self.signatures):  # todo issues!!! center+doors/gates --
-                                                                # todo 1. iterate among
-                                                                # todo 2. iterate to signature
-                                                                # todo 3. iterate to all in neighbours (center+doors)
-            # based on signature --> direct access (reach)
-            neighbours = self.adjacency_matrix[idx]
-            for rid, pids in self.regions_doors_info.items():
-                for pid in pids:
-                    if rid != idx and pid in signature and rid not in neighbours:
-                        view_line = LineString([self.regions_info[idx], self.regions_info[rid]])
-                        if isovist_object.view_intersects_boundary(view_line):
-                            continue
-                        self.rview_ids[counter] = [idx, rid]
-                        if isovist_object.view_intersects_holes(view_line):
-                            self.rviews[counter] = [self.regions_info[idx], Point(isovist_object.door_points[pid].x(),
-                                                                                  isovist_object.door_points[pid].y())]
-                            self.rview_ls[counter] = LineString(
-                                [self.regions_info[idx],
-                                 Point(isovist_object.door_points[pid].x(), isovist_object.door_points[pid].y())])
-                        else:
-                            self.rviews[counter] = [self.regions_info[idx], self.regions_info[rid]]
-                            self.rview_ls[counter] = view_line
-                            view_line = LineString(
-                                [self.regions_info[idx],
-                                 Point(isovist_object.door_points[pid].x(), isovist_object.door_points[pid].y())])
-                            if not isovist_object.view_intersects_holes(
-                                    view_line) and not isovist_object.view_intersects_boundary(view_line):
-                                counter += 1
-                                self.rview_ids[counter] = [idx, rid]
-                                self.rviews[counter] = [self.regions_info[idx],
-                                                        Point(isovist_object.door_points[pid].x(),
-                                                              isovist_object.door_points[pid].y())]
-                                self.rview_ls[counter] = view_line
+        for rid1, signature in enumerate(self.signatures):
+            neighbours = self.adjacency_matrix[rid1]
+            center = self.regions_info[rid1]
+            if rid1 in self.regions_doors_info.keys():
+                contained = self.regions_doors_info[rid1]
+            else:
+                contained = []
+            all_points = [Point(isovist_object.door_points[p].x(), isovist_object.door_points[p].y())
+                          for p in contained]
+            all_points.append(center)
+
+            # in region
+            for apid, p in enumerate(all_points):
+                is_door = True
+                if apid == len(all_points) - 1:
+                    is_door = False
+                for apid2, p2 in enumerate(all_points):
+                    is_door2 = True
+                    if apid2 == len(all_points) -1:
+                        is_door2 = False
+                    if apid != apid2:
+                        self.rview_ids[counter] = [rid1, rid1]
+                        self.rviews[counter] = [p, p2]
+                        self.rview_ls[counter] = LineString([p, p2])
+                        if is_door:
+                            if contained[apid] not in self.from_door_vids.keys():
+                                self.from_door_vids[contained[apid]] = []
+                            self.from_door_vids[contained[apid]].append(counter)
+                            if not is_door2:
+                                self.views_doors_info[contained[apid]] = counter
+                        if is_door2:
+                            if contained[apid2] not in self.to_door_vids.keys():
+                                self.to_door_vids[contained[apid2]] = []
+                            self.to_door_vids[contained[apid2]].append(counter)
                         counter += 1
 
-            if idx in self.regions_doors_info.keys() and len(self.regions_doors_info[idx]) > 0:
-                pids = self.regions_doors_info[idx]
-                centroid = self.regions_info[idx]
-                for pid1 in pids:
-                    point1 = Point(isovist_object.door_points[pid1].x(), isovist_object.door_points[pid1].y())
-                    self.rviews[counter] = [centroid, point1]
-                    self.rview_ids[counter] = [idx, idx]
-                    self.rview_ls[counter] = LineString([centroid, point1])
-                    self.to_door_vid[pid1] = counter
-                    counter += 1
-                    self.rviews[counter] = [point1, centroid]
-                    self.rview_ids[counter] = [idx, idx]
-                    self.rview_ls[counter] = LineString([point1, centroid])
-                    self.views_doors_info[pid1] = counter
-                    counter += 1
+                # to neighbours
+                for nrid in neighbours:
+                    ncenter = self.regions_info[nrid]
+                    if nrid in self.regions_doors_info.keys():
+                        ncontained = self.regions_doors_info[nrid]
+                    else:
+                        ncontained = []
+                    nall_points = [Point(isovist_object.door_points[p].x(), isovist_object.door_points[p].y())
+                                  for p in ncontained]
+                    nall_points.append(ncenter)
+                    for napid, np in enumerate(nall_points):
+                        is_door2 = True
+                        if napid == len(nall_points) -1:
+                            is_door2 = False
+                        self.rview_ids[counter] = [rid1, nrid]
+                        self.rviews[counter] = [p, np]
+                        self.rview_ls[counter] = LineString([p, np])
+                        if is_door:
+                            if contained[apid] not in self.from_door_vids.keys():
+                                self.from_door_vids[contained[apid]] = []
+                            self.from_door_vids[contained[apid]].append(counter)
+                        if is_door2:
+                            if ncontained[napid] not in self.to_door_vids.keys():
+                                self.to_door_vids[ncontained[napid]] = []
+                            self.to_door_vids[ncontained[napid]].append(counter)
+                        counter += 1
 
-                    # newly added
-                    # neighbours = self.adjacency_matrix[idx]
-                    # for rid, pids in self.regions_doors_info.items():
-                    #     for pid in pids:
-                    #         if rid != idx and pid in signature and rid not in neighbours:
-                    #             view_line = LineString([point1, self.regions_info[rid]])
-                    #             if isovist_object.view_intersects_boundary(view_line):
-                    #                 continue
-                    #             self.rview_ids[counter] = [idx, rid]
-                    #             if isovist_object.view_intersects_holes(view_line):
-                    #                 self.rviews[counter] = [point1,
-                    #                                         Point(isovist_object.door_points[pid].x(),
-                    #                                               isovist_object.door_points[pid].y())]
-                    #                 self.rview_ls[counter] = LineString(
-                    #                     [point1,
-                    #                      Point(isovist_object.door_points[pid].x(),
-                    #                            isovist_object.door_points[pid].y())])
-                    #             else:
-                    #                 self.rviews[counter] = [point1, self.regions_info[rid]]
-                    #                 self.rview_ls[counter] = view_line
-                    #                 view_line = LineString(
-                    #                     [point1,
-                    #                      Point(isovist_object.door_points[pid].x(),
-                    #                            isovist_object.door_points[pid].y())])
-                    #                 if not isovist_object.view_intersects_holes(
-                    #                         view_line) and not isovist_object.view_intersects_boundary(view_line):
-                    #                     counter += 1
-                    #                     self.rview_ids[counter] = [idx, rid]
-                    #                     self.rviews[counter] = [point1,
-                    #                                             Point(isovist_object.door_points[pid].x(),
-                    #                                                   isovist_object.door_points[pid].y())]
-                    #                     self.rview_ls[counter] = view_line
-                    #             counter += 1
-                    #
-
-                    for pid2 in pids:
-                        if pid1 != pid2:
-                            view_line = LineString([point1,
-                                                    Point(isovist_object.door_points[pid2].x(),
-                                                          isovist_object.door_points[pid2].y())])
-                            self.rviews[counter] = [point1,
-                                                    Point(isovist_object.door_points[pid2].x(),
-                                                          isovist_object.door_points[pid2].y())]
-                            self.rview_ids[counter] = [idx, idx]
-                            self.rview_ls[counter] = view_line
+                # to visible points not inside
+                for vpid in signature:
+                    if vpid not in contained:
+                        vrid = None
+                        vp = Point(isovist_object.door_points[vpid].x(), isovist_object.door_points[vpid].y())
+                        for svrid, dids in self.regions_doors_info.items():
+                            if vpid in dids:
+                                vrid = svrid
+                        if vrid is None:
+                            print('Boooooooooooom!!!!!!!!!!!!!!!!')
+                        else:
+                            self.rview_ids[counter] = [rid1, vrid]
+                            self.rviews[counter] = [p, vp]
+                            self.rview_ls[counter] = LineString([p, vp])
+                            if is_door:
+                                if contained[apid] not in self.from_door_vids.keys():
+                                    self.from_door_vids[contained[apid]] = []
+                                self.from_door_vids[contained[apid]].append(counter)
+                            if vpid not in self.to_door_vids.keys():
+                                self.to_door_vids[vpid] = []
+                            self.to_door_vids[vpid].append(counter)
                             counter += 1
 
-            # based on adjacent regions --> access to new information toward a visible object (orient)
-            for neighbour in neighbours:
-                view_line = LineString([self.regions_info[idx], self.regions_info[neighbour]])
-                if isovist_object.view_intersects_boundary(view_line):
-                    continue
-                self.rview_ids[counter] = [idx, neighbour]
-                if isovist_object.view_intersects_holes(view_line):
-                    pol_ext = LinearRing(self.regions_list[neighbour].exterior.coords)
-                    d = pol_ext.project(self.regions_info[idx])
-                    neighbour_point = pol_ext.interpolate(d)
-                    self.rviews[counter] = [self.regions_info[idx], neighbour_point]
-                    self.rview_ls[counter] = LineString([self.regions_info[idx], neighbour_point])
-                    counter += 1
-                    self.rview_ids[counter] = [idx, neighbour]
-                    self.rviews[counter] = [neighbour_point, self.regions_info[neighbour]]
-                    self.rview_ls[counter] = LineString([neighbour_point, self.regions_info[neighbour]])
-                else:
-                    self.rviews[counter] = [self.regions_info[idx], self.regions_info[neighbour]]
-                    self.rview_ls[counter] = view_line
-                if neighbour in self.regions_doors_info.keys():
-                    for pid in self.regions_doors_info[neighbour]:
-                        view_line = LineString([self.regions_info[idx], Point(isovist_object.door_points[pid].x(),
-                                                                              isovist_object.door_points[pid].y())])
-                        if isovist_object.view_intersects_boundary(view_line):
-                            continue
-                        if not isovist_object.view_intersects_holes(view_line):
-                            counter += 1
-                            self.rview_ids[counter] = [idx, neighbour]
-                            self.rviews[counter] = [self.regions_info[idx], Point(isovist_object.door_points[pid].x(),
-                                                                                  isovist_object.door_points[pid].y())]
-                            self.rview_ls[counter] = view_line
-                counter += 1
+        #
+        # for idx, signature in enumerate(self.signatures):  # todo issues!!! center+doors/gates --
+        #                                                         # todo 1. iterate among
+        #                                                         # todo 2. iterate to signature
+        #                                                         # todo 3. iterate to all in neighbours (center+doors)
+        #     # based on signature --> direct access (reach)
+        #     neighbours = self.adjacency_matrix[idx]
+        #     for rid, pids in self.regions_doors_info.items():
+        #         for pid in pids:
+        #             if rid != idx and pid in signature and rid not in neighbours:
+        #                 view_line = LineString([self.regions_info[idx], self.regions_info[rid]])
+        #                 if isovist_object.view_intersects_boundary(view_line):
+        #                     continue
+        #                 self.rview_ids[counter] = [idx, rid]
+        #                 if isovist_object.view_intersects_holes(view_line):
+        #                     self.rviews[counter] = [self.regions_info[idx], Point(isovist_object.door_points[pid].x(),
+        #                                                                           isovist_object.door_points[pid].y())]
+        #                     self.rview_ls[counter] = LineString(
+        #                         [self.regions_info[idx],
+        #                          Point(isovist_object.door_points[pid].x(), isovist_object.door_points[pid].y())])
+        #                 else:
+        #                     self.rviews[counter] = [self.regions_info[idx], self.regions_info[rid]]
+        #                     self.rview_ls[counter] = view_line
+        #                     view_line = LineString(
+        #                         [self.regions_info[idx],
+        #                          Point(isovist_object.door_points[pid].x(), isovist_object.door_points[pid].y())])
+        #                     if not isovist_object.view_intersects_holes(
+        #                             view_line) and not isovist_object.view_intersects_boundary(view_line):
+        #                         counter += 1
+        #                         self.rview_ids[counter] = [idx, rid]
+        #                         self.rviews[counter] = [self.regions_info[idx],
+        #                                                 Point(isovist_object.door_points[pid].x(),
+        #                                                       isovist_object.door_points[pid].y())]
+        #                         self.rview_ls[counter] = view_line
+        #                 counter += 1
+        #
+        #     if idx in self.regions_doors_info.keys() and len(self.regions_doors_info[idx]) > 0:
+        #         pids = self.regions_doors_info[idx]
+        #         centroid = self.regions_info[idx]
+        #         for pid1 in pids:
+        #             point1 = Point(isovist_object.door_points[pid1].x(), isovist_object.door_points[pid1].y())
+        #             self.rviews[counter] = [centroid, point1]
+        #             self.rview_ids[counter] = [idx, idx]
+        #             self.rview_ls[counter] = LineString([centroid, point1])
+        #             self.to_door_vid[pid1] = counter
+        #             counter += 1
+        #             self.rviews[counter] = [point1, centroid]
+        #             self.rview_ids[counter] = [idx, idx]
+        #             self.rview_ls[counter] = LineString([point1, centroid])
+        #             self.views_doors_info[pid1] = counter
+        #             counter += 1
+        #
+        #             # newly added
+        #             # neighbours = self.adjacency_matrix[idx]
+        #             # for rid, pids in self.regions_doors_info.items():
+        #             #     for pid in pids:
+        #             #         if rid != idx and pid in signature and rid not in neighbours:
+        #             #             view_line = LineString([point1, self.regions_info[rid]])
+        #             #             if isovist_object.view_intersects_boundary(view_line):
+        #             #                 continue
+        #             #             self.rview_ids[counter] = [idx, rid]
+        #             #             if isovist_object.view_intersects_holes(view_line):
+        #             #                 self.rviews[counter] = [point1,
+        #             #                                         Point(isovist_object.door_points[pid].x(),
+        #             #                                               isovist_object.door_points[pid].y())]
+        #             #                 self.rview_ls[counter] = LineString(
+        #             #                     [point1,
+        #             #                      Point(isovist_object.door_points[pid].x(),
+        #             #                            isovist_object.door_points[pid].y())])
+        #             #             else:
+        #             #                 self.rviews[counter] = [point1, self.regions_info[rid]]
+        #             #                 self.rview_ls[counter] = view_line
+        #             #                 view_line = LineString(
+        #             #                     [point1,
+        #             #                      Point(isovist_object.door_points[pid].x(),
+        #             #                            isovist_object.door_points[pid].y())])
+        #             #                 if not isovist_object.view_intersects_holes(
+        #             #                         view_line) and not isovist_object.view_intersects_boundary(view_line):
+        #             #                     counter += 1
+        #             #                     self.rview_ids[counter] = [idx, rid]
+        #             #                     self.rviews[counter] = [point1,
+        #             #                                             Point(isovist_object.door_points[pid].x(),
+        #             #                                                   isovist_object.door_points[pid].y())]
+        #             #                     self.rview_ls[counter] = view_line
+        #             #             counter += 1
+        #             #
+        #
+        #             for pid2 in pids:
+        #                 if pid1 != pid2:
+        #                     view_line = LineString([point1,
+        #                                             Point(isovist_object.door_points[pid2].x(),
+        #                                                   isovist_object.door_points[pid2].y())])
+        #                     self.rviews[counter] = [point1,
+        #                                             Point(isovist_object.door_points[pid2].x(),
+        #                                                   isovist_object.door_points[pid2].y())]
+        #                     self.rview_ids[counter] = [idx, idx]
+        #                     self.rview_ls[counter] = view_line
+        #                     counter += 1
+        #
+        #     # based on adjacent regions --> access to new information toward a visible object (orient)
+        #     for neighbour in neighbours:
+        #         view_line = LineString([self.regions_info[idx], self.regions_info[neighbour]])
+        #         if isovist_object.view_intersects_boundary(view_line):
+        #             continue
+        #         self.rview_ids[counter] = [idx, neighbour]
+        #         if isovist_object.view_intersects_holes(view_line):
+        #             pol_ext = LinearRing(self.regions_list[neighbour].exterior.coords)
+        #             d = pol_ext.project(self.regions_info[idx])
+        #             neighbour_point = pol_ext.interpolate(d)
+        #             self.rviews[counter] = [self.regions_info[idx], neighbour_point]
+        #             self.rview_ls[counter] = LineString([self.regions_info[idx], neighbour_point])
+        #             counter += 1
+        #             self.rview_ids[counter] = [idx, neighbour]
+        #             self.rviews[counter] = [neighbour_point, self.regions_info[neighbour]]
+        #             self.rview_ls[counter] = LineString([neighbour_point, self.regions_info[neighbour]])
+        #         else:
+        #             self.rviews[counter] = [self.regions_info[idx], self.regions_info[neighbour]]
+        #             self.rview_ls[counter] = view_line
+        #         if neighbour in self.regions_doors_info.keys():
+        #             for pid in self.regions_doors_info[neighbour]:
+        #                 view_line = LineString([self.regions_info[idx], Point(isovist_object.door_points[pid].x(),
+        #                                                                       isovist_object.door_points[pid].y())])
+        #                 if isovist_object.view_intersects_boundary(view_line):
+        #                     continue
+        #                 if not isovist_object.view_intersects_holes(view_line):
+        #                     counter += 1
+        #                     self.rview_ids[counter] = [idx, neighbour]
+        #                     self.rviews[counter] = [self.regions_info[idx], Point(isovist_object.door_points[pid].x(),
+        #                                                                           isovist_object.door_points[pid].y())]
+        #                     self.rview_ls[counter] = view_line
+        #         counter += 1
 
         print('decompose views')
         decomposed_views_dict = {}
@@ -298,8 +387,20 @@ class ViewGraph:
 
         for did, vid_old in self.views_doors_info.items():
             self.views_doors_info[did] = r_dr_mapping_ids[vid_old][0]
-        for did, vid_old in self.to_door_vid.items():
-            self.to_door_vid[did] = r_dr_mapping_ids[vid_old][-1]
+
+        to_door_vids_temp = {}
+        for did, vid_olds in self.to_door_vids.items():
+            to_door_vids_temp[did] = []
+            for vid_old in vid_olds:
+                to_door_vids_temp[did].append(r_dr_mapping_ids[vid_old][-1])
+        self.to_door_vids = to_door_vids_temp
+
+        from_door_vids_temp = {}
+        for did, vid_olds in self.from_door_vids.items():
+            from_door_vids_temp[did] = []
+            for vid_old in vid_olds:
+                from_door_vids_temp[did].append(r_dr_mapping_ids[vid_old][0])
+        self.from_door_vids = from_door_vids_temp
 
         self.from_region_ids = {}
         self.to_region_ids = {}
