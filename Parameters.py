@@ -1,5 +1,5 @@
 class Parameters:
-    epsilon = 0.000000001
+    epsilon = 0.00001
     alpha = 40
     fov = 120
     max_distance = 1000

@@ -49,16 +49,13 @@ class ViewGraph:
         #     holey = isovist_object.holes_y[idx]
         #     holes_centroids.append(Point(statistics.mean(holex), statistics.mean(holey)))
 
-        # regions_list_no_holes = []
-        # for r in self.regions_list:
-        #     is_hole = False
-        #     for cent in holes_centroids:
-        #         if r.contains(cent):
-        #             is_hole = True
-        #             break
-        #     if not is_hole:
-        #         regions_list_no_holes.append(r)
-        # self.regions_list = regions_list_no_holes
+        connected_regions = []
+        self.calculate_adjacency_matrix()
+        for key in self.adjacency_matrix:
+            if len(self.adjacency_matrix[key]) > 0:
+                connected_regions.append(key)
+        self.regions_list = [self.regions_list[idx] for idx in connected_regions]
+        print('regions : {0}'.format(len(self.regions_list)))
 
         # calculate regions signatures
         print('calculating the visibility signatures...')
@@ -69,25 +66,7 @@ class ViewGraph:
 
         # adjacent regions
         print('calculating adjacency matrix for regions')
-        self.adjacency_matrix = {}
-        for i in range(0, len(self.regions_list)):
-            ri = self.regions_list[i]
-            if i not in self.adjacency_matrix.keys():
-                self.adjacency_matrix[i] = []
-            for j in range(0, len(self.regions_list)):
-                if i == j:
-                    continue
-                rj = self.regions_list[j]
-                if ri.touches(rj):
-                    if isinstance(ri.intersection(rj), Point):
-                        continue
-                    self.adjacency_matrix[i].append(j)
-                    if j not in self.adjacency_matrix.keys():
-                        self.adjacency_matrix[j] = [i]
-                    else:
-                        self.adjacency_matrix[j].append(i)
-        if len(self.adjacency_matrix) == 0:
-            self.adjacency_matrix[0] = []
+        self.calculate_adjacency_matrix()
 
         # constructing view graph for decomposed regions
         print('finding regions that contains doors/gateways and decision points')
@@ -1037,3 +1016,24 @@ class ViewGraph:
             if r.area < Parameters.min_area:
                 return False
         return True
+
+    def calculate_adjacency_matrix(self):
+        self.adjacency_matrix = {}
+        for i in range(0, len(self.regions_list)):
+            ri = self.regions_list[i]
+            if i not in self.adjacency_matrix.keys():
+                self.adjacency_matrix[i] = []
+            for j in range(0, len(self.regions_list)):
+                if i == j:
+                    continue
+                rj = self.regions_list[j]
+                if ri.touches(rj):
+                    if isinstance(ri.intersection(rj), Point):
+                        continue
+                    self.adjacency_matrix[i].append(j)
+                    if j not in self.adjacency_matrix.keys():
+                        self.adjacency_matrix[j] = [i]
+                    else:
+                        self.adjacency_matrix[j].append(i)
+        if len(self.adjacency_matrix) == 0:
+            self.adjacency_matrix[0] = []
