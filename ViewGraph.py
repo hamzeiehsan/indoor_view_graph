@@ -5,7 +5,7 @@ import geopandas as gpd
 import networkx as nx
 from numpy import tan
 from shapely.geometry import Point, LineString
-from shapely.geometry import Polygon as Poly
+from shapely.geometry import Polygon as Poly, MultiLineString, GeometryCollection
 from shapely.ops import unary_union, polygonize, nearest_points
 
 from Parameters import Parameters
@@ -31,54 +31,34 @@ class ViewGraph:
         overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
         gdf = gpd.GeoDataFrame(geometry=overlay_regions)
         regions = list(gdf['geometry'])
-        regions_area = [r.area for r in regions]
-        regions_area, ccs, regions = zip(*sorted(zip(regions_area, countfunc(), regions)))
+        print('region initial : {}'.format(len(regions)))
+        flag = True
+        while not ViewGraph.validate_regions(regions) and flag:
+            regions, flag = ViewGraph.merge(regions)
+
         self.regions_list = []
-        merge_dict = {}
-        skip = []
-        for idx, a in enumerate(regions_area):
-            if a < Parameters.min_area:
-                r = regions[idx]
-                touches = {}
-                max_length = -1
-                max_idx = -1
-                for idx2, r2 in enumerate(regions):
-                    if idx2 > idx and r2.touches(r):
-                        touches[idx2] = r2.intersection(r).length
-                        if touches[idx2] > max_length:
-                            max_length = touches[idx2]
-                            max_idx = idx2
-                if max_idx > 0 and touches[max_idx] > 0:
-                    if max_idx not in merge_dict.keys():
-                        merge_dict[max_idx] = []
-                    merge_dict[max_idx].append(idx)
-                    skip.append(idx)
+        for r in regions:
+            if isinstance(r, Poly):
+                self.regions_list.append(r)
+            else:
+                for r2 in list(r):
+                    self.regions_list.append(r2)
+        print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
+                # holes_centroids = []
+        # for idx, holex in enumerate(isovist_object.holes_x):
+        #     holey = isovist_object.holes_y[idx]
+        #     holes_centroids.append(Point(statistics.mean(holex), statistics.mean(holey)))
 
-        for idx, r in enumerate(regions):
-            if idx not in skip:
-                if idx not in merge_dict.keys():
-                    self.regions_list.append(r)
-                else:
-                    temp = r
-                    for idx2 in merge_dict[idx]:
-                        temp = temp.union(regions[idx2])
-                    self.regions_list.append(temp)
-
-        holes_centroids = []
-        for idx, holex in enumerate(isovist_object.holes_x):
-            holey = isovist_object.holes_y[idx]
-            holes_centroids.append(Point(statistics.mean(holex), statistics.mean(holey)))
-
-        regions_list_no_holes = []
-        for r in self.regions_list:
-            is_hole = False
-            for cent in holes_centroids:
-                if r.contains(cent):
-                    is_hole = True
-                    break
-            if not is_hole:
-                regions_list_no_holes.append(r)
-        self.regions_list = regions_list_no_holes
+        # regions_list_no_holes = []
+        # for r in self.regions_list:
+        #     is_hole = False
+        #     for cent in holes_centroids:
+        #         if r.contains(cent):
+        #             is_hole = True
+        #             break
+        #     if not is_hole:
+        #         regions_list_no_holes.append(r)
+        # self.regions_list = regions_list_no_holes
 
         # calculate regions signatures
         print('calculating the visibility signatures...')
@@ -90,11 +70,13 @@ class ViewGraph:
         # adjacent regions
         print('calculating adjacency matrix for regions')
         self.adjacency_matrix = {}
-        for i in range(0, len(self.regions_list) - 1):
+        for i in range(0, len(self.regions_list)):
             ri = self.regions_list[i]
             if i not in self.adjacency_matrix.keys():
                 self.adjacency_matrix[i] = []
-            for j in range(i + 1, len(self.regions_list)):
+            for j in range(0, len(self.regions_list)):
+                if i == j:
+                    continue
                 rj = self.regions_list[j]
                 if ri.touches(rj):
                     if isinstance(ri.intersection(rj), Point):
@@ -179,8 +161,6 @@ class ViewGraph:
                                 self.to_door_vids[contained[apid2]] = []
                             self.to_door_vids[contained[apid2]].append(counter)
                         counter += 1
-                        if self.name == 'Open Workplace' and counter == 80:
-                            print('wait')
 
                 # to neighbours
                 for nrid in neighbours:
@@ -196,20 +176,24 @@ class ViewGraph:
                         is_door2 = True
                         if napid == len(nall_points) -1:
                             is_door2 = False
-                        self.rview_ids[counter] = [rid1, nrid]
-                        self.rviews[counter] = [p, np]
-                        self.rview_ls[counter] = LineString([p, np])
-                        if is_door:
-                            if contained[apid] not in self.from_door_vids.keys():
-                                self.from_door_vids[contained[apid]] = []
-                            self.from_door_vids[contained[apid]].append(counter)
-                        if is_door2:
-                            if ncontained[napid] not in self.to_door_vids.keys():
-                                self.to_door_vids[ncontained[napid]] = []
-                            self.to_door_vids[ncontained[napid]].append(counter)
-                        counter += 1
-                        if self.name == 'Open Workplace' and counter == 80:
-                            print('wait')
+
+                        if not self.view_intersects_holes(isovist_object, LineString([p, np])) and \
+                                not self.view_intersects_boundary(isovist_object, LineString([p, np])):
+                            self.rview_ids[counter] = [rid1, nrid]
+                            self.rviews[counter] = [p, np]
+                            self.rview_ls[counter] = LineString([p, np])
+                            if is_door:
+                                if contained[apid] not in self.from_door_vids.keys():
+                                    self.from_door_vids[contained[apid]] = []
+                                self.from_door_vids[contained[apid]].append(counter)
+                            if is_door2:
+                                if ncontained[napid] not in self.to_door_vids.keys():
+                                    self.to_door_vids[ncontained[napid]] = []
+                                self.to_door_vids[ncontained[napid]].append(counter)
+                            counter += 1
+                        else:
+                            continue
+                            #print('wait here...')  # todo intersecting boundary
 
                 # to visible points not inside
                 for vpid in signature:
@@ -302,7 +286,7 @@ class ViewGraph:
                                 '{0}-V{1}'.format(self.name, dvids[len(dvids) - 1]),
                                 '{0}-V{1}'.format(self.name, dvids2[0]),
                                 weight=dv1, label='move')
-                    elif pids[0] == pids2[0]:  # turn
+                    if pids[0] == pids2[0]:  # turn
                         if self.rviews[vid][0].distance(self.rviews[vid2][0]) < Parameters.epsilon:
                             self.rviewgraph.add_edge(
                                 '{0}-V{1}'.format(self.name, dvids[0]),
@@ -992,3 +976,64 @@ class ViewGraph:
                 place_graph[nid][pid]['as'] = vals['place']['as']
                 place_graph[nid][pid]['label'] = 'has_reference_direction {}'.format(vals['place']['as'])
         return place_graph
+
+    def view_intersects_holes(self, isovist_object, view_ls):
+        return isovist_object.view_intersects_holes(view_ls)
+
+    def view_intersects_boundary(self, isovist_object, view_ls):
+        return isovist_object.view_intersects_boundary(view_ls)
+
+    @staticmethod
+    def merge(regions):
+        regions_list = []
+        regions_area = [r.area for r in regions]
+        regions_area, ccs, regions = zip(*sorted(zip(regions_area, countfunc(), regions)))
+        merge_dict = {}
+        skip = []
+        merge_dict_inv = {}
+        for idx, a in enumerate(regions_area):
+            if a < Parameters.min_area:
+                r = regions[idx]
+                touches = {}
+                max_length = -1
+                max_idx = -1
+                for idx2, r2 in enumerate(regions):
+                    if idx2 != idx and r2.touches(r):
+                        touches[idx2] = r2.intersection(r).length
+                        if touches[idx2] > max_length:
+                            max_length = touches[idx2]
+                            max_idx = idx2
+                if max_idx > 0 and max_length > 0:
+                    merge_dict_inv[idx] = max_idx
+                    if max_idx not in merge_dict.keys():
+                        merge_dict[max_idx] = []
+                    merge_dict[max_idx].append(idx)
+                skip.append(idx)
+
+        already_processed = set()
+        still_small = []
+        for idx, r in enumerate(regions):
+            if idx not in skip:
+                if idx not in merge_dict.keys():
+                    regions_list.append(r)
+                    already_processed.add(idx)
+            else:
+                idx_temp = idx
+                shp_temp_u = regions[idx_temp]
+                while idx_temp not in already_processed and \
+                        idx_temp in merge_dict_inv.keys():
+                    idx_temp = merge_dict_inv[idx_temp]
+                    shp_temp = regions[idx_temp]
+                    shp_temp_u = shp_temp_u.union(shp_temp)
+                    already_processed.add(idx_temp)
+                regions_list.append(shp_temp_u)
+                if shp_temp_u.area < Parameters.min_area:
+                    still_small.append(shp_temp_u)
+        return regions_list, len(regions) != len(regions_list)
+
+    @staticmethod
+    def validate_regions(regions):
+        for r in regions:
+            if r.area < Parameters.min_area:
+                return False
+        return True

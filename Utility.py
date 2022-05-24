@@ -211,4 +211,4 @@ class Utility:
 
     @staticmethod
     def shortest_path(graph, n1, n2):
-        return nx.shortest_path(graph, n1, n2)
+        return nx.shortest_path(graph, n1, n2, weight='weight')

@@ -64,8 +64,10 @@ class Isovist:
         test_idx = None
         for isovist in self.isovists:
             iso_x, iso_y = Utility.save_print(isovist)
+            iso_x.append(iso_x[0])
+            iso_y.append(iso_y[0])
             geojson_polygon = Utility.to_polygon_geojson(iso_x, iso_y)
-            shp = Utility.to_polygon_shape(geojson_polygon, self.space_shp, self.holes, clip=True)
+            shp = Utility.to_polygon_shape(geojson_polygon, self.space_shp, self.holes, clip=False)
             if not shp.is_valid:
                 print('invalid')
             if isinstance(shp, MultiPolygon):
@@ -87,8 +89,10 @@ class Isovist:
         door.snap_to_vertices_of(self.env, Parameters.epsilon)
         isovist = vis.Visibility_Polygon(door, self.env, Parameters.epsilon)
         iso_x, iso_y = Utility.save_print(isovist)
+        iso_x.append(iso_x[0])
+        iso_y.append(iso_y[0])
         geojson_polygon = Utility.to_polygon_geojson(iso_x, iso_y)
-        shp = Utility.to_polygon_shape(geojson_polygon, self.space_shp, self.holes, clip=True)
+        shp = Utility.to_polygon_shape(geojson_polygon, self.space_shp, self.holes, clip=False)
         if not shp.is_valid:
             print('invalid')
         if isinstance(shp, MultiPolygon):

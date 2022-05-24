@@ -18,7 +18,7 @@ class IndoorEnvironment:
         if len(pfiles) == len(hfiles) == len(dfiles) == len(dpfiles) == len(lfiles):
             print('environment files -- count is valid')
             for idx, pfile in enumerate(pfiles):
-                if 'R5332' not in pfile and 'Workplace' not in pfile:
+                if 'R5332' not in pfile:
                     container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
                     self.containers.append(container)
                     self.containers_names.append(container.name)
@@ -150,14 +150,14 @@ class IndoorEnvironment:
         self.isovist_objects = isovist_objects
         return vgs, isovist_objects
 
-    def shortest_path(self, container_name1, region_id1, container_name2, region_id2):
+    def shortest_path(self, container_name1, region_id1, container_name2, region_id2):  # hierarchical?
         idx1 = self.containers_names.index(container_name1)
         idx2 = self.containers_names.index(container_name2)
         container1 = self.containers[idx1]
         container2 = self.containers[idx2]
         vg1 = self.cviewgraphs[idx1]
         vg2 = self.cviewgraphs[idx2]
-        vid1 = '{0}-V{1}'.format(container1.name, vg1.from_region_ids[region_id1])
+        vid1 = '{0}-V{1}'.format(container1.name, vg1.to_region_ids[region_id1])
         vid2 = '{0}-V{1}'.format(container2.name, vg2.from_region_ids[region_id2])
         spath = Utility.shortest_path(self.graph, vid1, vid2)
         path_view = []

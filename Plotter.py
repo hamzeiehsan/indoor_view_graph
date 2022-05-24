@@ -76,3 +76,6 @@ class Plotter:
                                            'spring_strength': 0.05, 'damping': 0.09})
         nt2.show_buttons(filter_=True)
         nt2.show(file)
+
+    def get_plt(self):
+        return plt
