@@ -49,13 +49,14 @@ class ViewGraph:
         #     holey = isovist_object.holes_y[idx]
         #     holes_centroids.append(Point(statistics.mean(holex), statistics.mean(holey)))
 
-        connected_regions = []
-        self.calculate_adjacency_matrix()
-        for key in self.adjacency_matrix:
-            if len(self.adjacency_matrix[key]) > 0:
-                connected_regions.append(key)
-        self.regions_list = [self.regions_list[idx] for idx in connected_regions]
-        print('regions : {0}'.format(len(self.regions_list)))
+        if len(self.regions_list) > 1:
+            connected_regions = []
+            self.calculate_adjacency_matrix()
+            for key in self.adjacency_matrix:
+                if len(self.adjacency_matrix[key]) > 0:
+                    connected_regions.append(key)
+            self.regions_list = [self.regions_list[idx] for idx in connected_regions]
+            print('regions : {0}'.format(len(self.regions_list)))
 
         # calculate regions signatures
         print('calculating the visibility signatures...')
