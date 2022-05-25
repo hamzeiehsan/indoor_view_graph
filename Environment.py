@@ -187,7 +187,7 @@ if __name__ == '__main__':
     address = 'envs/mc5/'
     pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
         address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
-    containers = ['E_Corridor']
+    containers = ['E_Corridor', 'Active_Hub', 'UX_Lab', 'M_Toilet']
     pfiles = ['{}-pfile.geojson'.format(container) for container in containers]
     hfiles = ['{}-hfile.geojson'.format(container) for container in containers]
     dfiles = ['{}-dfile.geojson'.format(container) for container in containers]

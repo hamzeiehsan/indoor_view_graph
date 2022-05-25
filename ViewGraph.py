@@ -32,9 +32,9 @@ class ViewGraph:
         gdf = gpd.GeoDataFrame(geometry=overlay_regions)
         regions = list(gdf['geometry'])
         print('region initial : {}'.format(len(regions)))
-        flag = True
-        while not ViewGraph.validate_regions(regions) and flag:
-            regions, flag = ViewGraph.merge(regions)
+        # flag = True
+        # while not ViewGraph.validate_regions(regions) and flag:
+        #     regions, flag = ViewGraph.merge(regions)
 
         self.regions_list = []
         for r in regions:
@@ -81,6 +81,7 @@ class ViewGraph:
                         self.regions_doors_info[rid] = []
                     self.regions_doors_info[rid].append(pid)
                     done = pid
+                    break
             if done != pid:
                 min_dr = 1000
                 chosen = None
@@ -194,8 +195,6 @@ class ViewGraph:
                                 self.to_door_vids[vpid] = []
                             self.to_door_vids[vpid].append(counter)
                             counter += 1
-                            if self.name == 'Open Workplace' and counter == 80:
-                                print('wait')
         print('decompose views')
         decomposed_views_dict = {}
         c_views = 0
@@ -347,14 +346,6 @@ class ViewGraph:
         for idx, r in enumerate(self.regions_list):
             if r.contains(point) or point.touches(r):
                 return idx
-        min_dist = 100000
-        selected_r = None
-        for idx, r in enumerate(self.regions_list):
-            dr = r.distance(point)
-            if min_dist > dr:
-                selected_r = r
-                min_dist = dr
-        return selected_r
 
     def view_vision(self, isovist_object, view_idx, is_start=True, isovist_view=None):
         triangle = self.vision_triangle(view_idx)
@@ -388,8 +379,11 @@ class ViewGraph:
 
     def decompose_view_disappear(self, isovist_object, view_idx, plot=False):
         decomposed = []
+
         view = self.rviews[view_idx]
         ids = self.rview_ids[view_idx]
+        if self.rview_ls[view_idx].length < 0.005:
+            return [{'ids': ids, 'view': view}]
         destinations = []
         if ids[1] in self.regions_doors_info.keys():
             destinations = self.regions_doors_info[ids[1]]
