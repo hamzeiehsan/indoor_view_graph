@@ -245,7 +245,7 @@ class ViewGraph:
                 self.to_region_ids[vals[1]] = r_dr_mapping_ids[rvid][-1]
             if len(self.to_region_ids) == len(self.signatures) and len(self.from_region_ids) == len(self.signatures):
                 break
-
+        print('len: {}'.format(len(self.rviews)))
         # constructing region view graph
         print('constructing view graph for regions')
         self.rviewgraph = nx.DiGraph()
@@ -347,6 +347,14 @@ class ViewGraph:
         for idx, r in enumerate(self.regions_list):
             if r.contains(point) or point.touches(r):
                 return idx
+        min_dist = 100000
+        selected_r = None
+        for idx, r in enumerate(self.regions_list):
+            dr = r.distance(point)
+            if min_dist > dr:
+                selected_r = r
+                min_dist = dr
+        return selected_r
 
     def view_vision(self, isovist_object, view_idx, is_start=True, isovist_view=None):
         triangle = self.vision_triangle(view_idx)
@@ -1028,7 +1036,8 @@ class ViewGraph:
                     continue
                 rj = self.regions_list[j]
                 if ri.touches(rj):
-                    if isinstance(ri.intersection(rj), Point):
+                    if isinstance(ri.intersection(rj), Point) or \
+                            ri.intersection(rj).length < Parameters.epsilon/100:
                         continue
                     self.adjacency_matrix[i].append(j)
                     if j not in self.adjacency_matrix.keys():
