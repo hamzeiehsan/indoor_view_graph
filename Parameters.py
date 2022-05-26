@@ -3,5 +3,5 @@ class Parameters:
     alpha = 40
     fov = 120
     max_distance = 1000
-    min_area = 0.00000001
+    min_area = 0.0000005
     max_collect_geom = 0.002

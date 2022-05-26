@@ -39,7 +39,7 @@
 { "type": "Feature", "properties": { "id": 34, "container1": "Workplace", "container2": "R5329" }, "geometry": { "type": "Point", "coordinates": [ 145.072100091856413, -37.809110696524129 ] } },
 { "type": "Feature", "properties": { "id": 35, "container1": "Workplace", "container2": "R5328" }, "geometry": { "type": "Point", "coordinates": [ 145.072140216155901, -37.807919903610781 ] } },
 { "type": "Feature", "properties": { "id": 36, "container1": "Workplace", "container2": "R5333" }, "geometry": { "type": "Point", "coordinates": [ 145.075640355941403, -37.807983937612633 ] } },
-{ "type": "Feature", "properties": { "id": 37, "container1": "Workplace", "container2": "R5322" }, "geometry": { "type": "Point", "coordinates": [ 145.075606483500451, -37.809072025143607 ] } },
+{ "type": "Feature", "properties": { "id": 37, "container1": "Workplace", "container2": "R5332" }, "geometry": { "type": "Point", "coordinates": [ 145.075606483500451, -37.809072025143607 ] } },
 { "type": "Feature", "properties": { "id": 38, "container1": "Workplace", "container2": "F301" }, "geometry": { "type": "Point", "coordinates": [ 145.074643850704661, -37.81179376720938 ] } },
 { "type": "Feature", "properties": { "id": 39, "container1": "Workplace", "container2": "F306" }, "geometry": { "type": "Point", "coordinates": [ 145.072885592223713, -37.811808981061091 ] } }
 ]

@@ -5,7 +5,10 @@ from Plotter import Plotter
 from Utility import Utility
 from ViewGraph import ViewGraph
 from geojson import MultiPolygon, Feature, FeatureCollection, dump
+import warnings
 
+
+warnings.filterwarnings("ignore")
 
 class IndoorEnvironment:
     def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):  # todo: link between containers
@@ -18,7 +21,7 @@ class IndoorEnvironment:
         if len(pfiles) == len(hfiles) == len(dfiles) == len(dpfiles) == len(lfiles):
             print('environment files -- count is valid')
             for idx, pfile in enumerate(pfiles):
-                if 'R5332' not in pfile:
+                if 'Workplace' not in pfile:
                     container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
                     self.containers.append(container)
                     self.containers_names.append(container.name)
@@ -188,16 +191,16 @@ if __name__ == '__main__':
     pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
         address, 'area.geojson', 'doors.geojson', 'landmarks.geojson')
     containers = ['E_Corridor', 'Active_Hub', 'UX_Lab', 'M_Toilet']
-    pfiles = ['{}-pfile.geojson'.format(container) for container in containers]
-    hfiles = ['{}-hfile.geojson'.format(container) for container in containers]
-    dfiles = ['{}-dfile.geojson'.format(container) for container in containers]
-    dpfiles = ['{}-dpfile.geojson'.format(container) for container in containers]
-    # dpoints_files = [None for container in containers]
-    lfiles = ['{}-lfile.geojson'.format(container) for container in containers]
+    # pfiles = ['{}-pfile.geojson'.format(container) for container in containers]
+    # hfiles = ['{}-hfile.geojson'.format(container) for container in containers]
+    # dfiles = ['{}-dfile.geojson'.format(container) for container in containers]
+    # dpfiles = ['{}-dpfile.geojson'.format(container) for container in containers]
+    # # dpoints_files = [None for container in containers]
+    # lfiles = ['{}-lfile.geojson'.format(container) for container in containers]
 
 
     # create an indoor environment
-    ie = IndoorEnvironment(address, pfiles, hfiles, dfiles, dpfiles, lfiles)
+    ie = IndoorEnvironment('', pfiles, hfiles, dfiles, dpfiles, lfiles)
 
     # create view graph
     vgs, isovist_objects = ie.construct_view_graph()
@@ -205,7 +208,7 @@ if __name__ == '__main__':
     isovist_object = isovist_objects[0]
 
     # calculate shortest path and generate verbal description
-    vp, pv= vg.shortest_path_regions(2, len(vg.regions_list)-1)
+    vp, pv= vg.shortest_path_regions(0, len(vg.regions_list)-1)
 
     # derive door-to-door visibility graph (doors and decision points)
     connected, dtd_graph = vg.generate_door_to_door_graph(isovist_object)

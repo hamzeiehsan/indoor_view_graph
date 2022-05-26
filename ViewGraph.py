@@ -5,7 +5,7 @@ import geopandas as gpd
 import networkx as nx
 from numpy import tan
 from shapely.geometry import Point, LineString
-from shapely.geometry import Polygon as Poly, MultiLineString, GeometryCollection
+from shapely.geometry import Polygon as Poly, LinearRing
 from shapely.ops import unary_union, polygonize, nearest_points
 
 from Parameters import Parameters
@@ -28,26 +28,53 @@ class ViewGraph:
 
     def calculate(self, isovist_object):
         self.shapes_list = [isovist_object.shapes[i]['shape'] for i in range(0, len(isovist_object.shapes))]
-        overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
-        gdf = gpd.GeoDataFrame(geometry=overlay_regions)
-        regions = list(gdf['geometry'])
+        #overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
+        #gdf = gpd.GeoDataFrame(geometry=overlay_regions)
+        dfs = []
+        for idx, shp in enumerate(self.shapes_list):
+            df = gpd.GeoDataFrame({'geometry': gpd.GeoSeries([shp]), 'idx:{}'.format(idx): 1})
+            df.simplify(0.000001)
+            dfs.append(df)
+        dff = dfs[0]
+        for df in dfs[1:]:
+            dff = dff.overlay(df, how='union')
+        dff = dff.explode()
+        signatures = []
+        for index_row, row in dff.iterrows():
+            signature = []
+            for idx in range(len(isovist_object.door_points)):
+                key = 'idx:{}'.format(idx)
+                if row[key] == 1:
+                    signature.append(idx)
+            signatures.append(signature)
+        regions = list(dff['geometry'])
         print('region initial : {}'.format(len(regions)))
-        # flag = True
-        # while not ViewGraph.validate_regions(regions) and flag:
-        #     regions, flag = ViewGraph.merge(regions)
+        idxes = []
+        regions_copy = regions.copy()
+        big_regions = []
+        small_regions = []
+        for rid, region in enumerate(regions_copy):
+            if region.area > Parameters.min_area/10:
+                big_regions.append(region)
+                idxes.append(rid)
+            elif region.length > 0 and region.area > 0:
+            #     if region.length - region.intersection(isovist_object.space_shp).length > 0.0001 or\
+            #         region.length/region.area < 10000:
+                small_regions.append(region)
+
+        all_regions = big_regions.copy()
+
+        # if len(small_regions) > 0:
+        #     union_small = small_regions[0]
+        #     for small_region in small_regions:
+        #         union_small = union_small.union(small_region)
+        #     all_regions.append(union_small)
 
         self.regions_list = []
-        for r in regions:
-            if isinstance(r, Poly):
-                self.regions_list.append(r)
-            else:
-                for r2 in list(r):
-                    self.regions_list.append(r2)
+        for r in all_regions:
+            self.regions_list.append(r)
         print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
-                # holes_centroids = []
-        # for idx, holex in enumerate(isovist_object.holes_x):
-        #     holey = isovist_object.holes_y[idx]
-        #     holes_centroids.append(Point(statistics.mean(holex), statistics.mean(holey)))
+        self.signatures = [signatures[idx] for idx in idxes]
 
         if len(self.regions_list) > 1:
             connected_regions = []
@@ -56,14 +83,15 @@ class ViewGraph:
                 if len(self.adjacency_matrix[key]) > 0:
                     connected_regions.append(key)
             self.regions_list = [self.regions_list[idx] for idx in connected_regions]
-            print('regions : {0}'.format(len(self.regions_list)))
+            self.signatures = [self.signatures[idx] for idx in connected_regions]
+        print('regions : {0}'.format(len(self.regions_list)))
 
         # calculate regions signatures
-        print('calculating the visibility signatures...')
-        self.signatures = []
-        for oregion in self.regions_list:
-            center = oregion.centroid
-            self.signatures.append([self.shapes_list.index(shp) for shp in self.shapes_list if shp.contains(center)])
+        # print('calculating the visibility signatures...')
+        # self.signatures = []
+        # for oregion in self.regions_list:
+        #     center = oregion.centroid
+        #     self.signatures.append([self.shapes_list.index(shp) for shp in self.shapes_list if shp.contains(center)])
 
         # adjacent regions
         print('calculating adjacency matrix for regions')
@@ -102,7 +130,6 @@ class ViewGraph:
         self.rview_ls = {}
         counter = 0
         self.views_doors_info = {}
-
         self.to_door_vids = {}
         self.from_door_vids = {}
 
@@ -128,20 +155,20 @@ class ViewGraph:
                     if apid2 == len(all_points) -1:
                         is_door2 = False
                     if apid != apid2:
-                        self.rview_ids[counter] = [rid1, rid1]
-                        self.rviews[counter] = [p, p2]
-                        self.rview_ls[counter] = LineString([p, p2])
-                        if is_door:
-                            if contained[apid] not in self.from_door_vids.keys():
-                                self.from_door_vids[contained[apid]] = []
-                            self.from_door_vids[contained[apid]].append(counter)
-                            if not is_door2:
-                                self.views_doors_info[contained[apid]] = counter
-                        if is_door2:
-                            if contained[apid2] not in self.to_door_vids.keys():
-                                self.to_door_vids[contained[apid2]] = []
-                            self.to_door_vids[contained[apid2]].append(counter)
-                        counter += 1
+                        if not self.view_intersects_holes(isovist_object, LineString([p, p2])) and \
+                                not self.view_intersects_boundary(isovist_object, LineString([p, p2])):
+                            self.rview_ids[counter] = [rid1, rid1]
+                            self.rviews[counter] = [p, p2]
+                            self.rview_ls[counter] = LineString([p, p2])
+                            if is_door:
+                                if contained[apid] not in self.from_door_vids.keys():
+                                    self.from_door_vids[contained[apid]] = []
+                                self.from_door_vids[contained[apid]].append(counter)
+                            if is_door2:
+                                if contained[apid2] not in self.to_door_vids.keys():
+                                    self.to_door_vids[contained[apid2]] = []
+                                self.to_door_vids[contained[apid2]].append(counter)
+                            counter += 1
 
                 # to neighbours
                 for nrid in neighbours:
@@ -157,7 +184,6 @@ class ViewGraph:
                         is_door2 = True
                         if napid == len(nall_points) -1:
                             is_door2 = False
-
                         if not self.view_intersects_holes(isovist_object, LineString([p, np])) and \
                                 not self.view_intersects_boundary(isovist_object, LineString([p, np])):
                             self.rview_ids[counter] = [rid1, nrid]
@@ -173,8 +199,25 @@ class ViewGraph:
                                 self.to_door_vids[ncontained[napid]].append(counter)
                             counter += 1
                         else:
-                            continue
-                            #print('wait here...')  # todo intersecting boundary
+                            pol_ext = LinearRing(self.regions_list[nrid].exterior.coords)
+                            dpol = pol_ext.project(p)
+                            neighbour_point = pol_ext.interpolate(dpol)
+                            self.rview_ids[counter] = [rid1, nrid]
+                            self.rviews[counter] = [p, neighbour_point]
+                            self.rview_ls[counter] = LineString([p, neighbour_point])
+                            if is_door:
+                                if contained[apid] not in self.from_door_vids.keys():
+                                    self.from_door_vids[contained[apid]] = []
+                                self.from_door_vids[contained[apid]].append(counter)
+                            counter += 1
+                            self.rview_ids[counter] = [nrid, nrid]
+                            self.rviews[counter] = [neighbour_point, np]
+                            self.rview_ls[counter] = LineString([neighbour_point, np])
+                            if is_door2:
+                                if ncontained[napid] not in self.to_door_vids.keys():
+                                    self.to_door_vids[ncontained[napid]] = []
+                                self.to_door_vids[ncontained[napid]].append(counter)
+                            counter += 1
 
                 # to visible points not inside
                 for vpid in signature:
@@ -185,17 +228,19 @@ class ViewGraph:
                             if vpid in dids:
                                 vrid = svrid
                         if vrid is not None:
-                            self.rview_ids[counter] = [rid1, vrid]
-                            self.rviews[counter] = [p, vp]
-                            self.rview_ls[counter] = LineString([p, vp])
-                            if is_door:
-                                if contained[apid] not in self.from_door_vids.keys():
-                                    self.from_door_vids[contained[apid]] = []
-                                self.from_door_vids[contained[apid]].append(counter)
-                            if vpid not in self.to_door_vids.keys():
-                                self.to_door_vids[vpid] = []
-                            self.to_door_vids[vpid].append(counter)
-                            counter += 1
+                            if not self.view_intersects_holes(isovist_object, LineString([p, vp])) and \
+                                    not self.view_intersects_boundary(isovist_object, LineString([p, vp])):
+                                self.rview_ids[counter] = [rid1, vrid]
+                                self.rviews[counter] = [p, vp]
+                                self.rview_ls[counter] = LineString([p, vp])
+                                if is_door:
+                                    if contained[apid] not in self.from_door_vids.keys():
+                                        self.from_door_vids[contained[apid]] = []
+                                    self.from_door_vids[contained[apid]].append(counter)
+                                if vpid not in self.to_door_vids.keys():
+                                    self.to_door_vids[vpid] = []
+                                self.to_door_vids[vpid].append(counter)
+                                counter += 1
         print('decompose views')
         decomposed_views_dict = {}
         c_views = 0
@@ -219,9 +264,6 @@ class ViewGraph:
                 r_dr_mapping_ids[vid_old].append(idx)
                 idx += 1
 
-        for did, vid_old in self.views_doors_info.items():
-            self.views_doors_info[did] = r_dr_mapping_ids[vid_old][0]
-
         to_door_vids_temp = {}
         for did, vid_olds in self.to_door_vids.items():
             to_door_vids_temp[did] = []
@@ -235,6 +277,9 @@ class ViewGraph:
             for vid_old in vid_olds:
                 from_door_vids_temp[did].append(r_dr_mapping_ids[vid_old][0])
         self.from_door_vids = from_door_vids_temp
+
+        for did, vids in self.from_door_vids.items():
+            self.views_doors_info[did] = vids[0]
 
         self.from_region_ids = {}
         self.to_region_ids = {}
@@ -1031,8 +1076,7 @@ class ViewGraph:
                     continue
                 rj = self.regions_list[j]
                 if ri.touches(rj):
-                    if isinstance(ri.intersection(rj), Point) or \
-                            ri.intersection(rj).length < Parameters.epsilon/100:
+                    if isinstance(ri.intersection(rj), Point):
                         continue
                     self.adjacency_matrix[i].append(j)
                     if j not in self.adjacency_matrix.keys():
@@ -1041,3 +1085,5 @@ class ViewGraph:
                         self.adjacency_matrix[j].append(i)
         if len(self.adjacency_matrix) == 0:
             self.adjacency_matrix[0] = []
+        for key, vals in self.adjacency_matrix.items():
+            self.adjacency_matrix[key] = list(set(self.adjacency_matrix[key]))

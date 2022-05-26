@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": []}
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [145.075606, -37.809072]}, "properties": {"id": 37, "container1": "Workplace", "container2": "R5332"}}]}
