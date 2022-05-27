@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[630.773559, -419.695192], [630.773559, -346.103202], [680.432958, -346.103202], [680.432958, -419.695192], [630.773559, -419.695192]]]]}, "properties": {"id": 7, "name": "stairs", "full_name": "Stairs to Lower Floors"}}]}

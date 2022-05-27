@@ -1,0 +1,30 @@
+{
+"type": "FeatureCollection",
+"name": "landmarks",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 0, "container": "corridor" }, "geometry": { "type": "Point", "coordinates": [ 332.463171446408865, -346.103201794606036 ] } },
+{ "type": "Feature", "properties": { "id": 1, "container": "corridor" }, "geometry": { "type": "Point", "coordinates": [ 405.332916145180945, -319.189559742040387 ] } },
+{ "type": "Feature", "properties": { "id": 2, "container": "corridor" }, "geometry": { "type": "Point", "coordinates": [ 412.100217754294192, -346.103201794606093 ] } },
+{ "type": "Feature", "properties": { "id": 3, "container": "corridor" }, "geometry": { "type": "Point", "coordinates": [ 551.714735901978202, -346.103201794606093 ] } },
+{ "type": "Feature", "properties": { "id": 4, "container": "active hub" }, "geometry": { "type": "Point", "coordinates": [ 638.448152672941774, -283.02002503128881 ] } },
+{ "type": "Feature", "properties": { "id": 5, "container": "ux lab" }, "geometry": { "type": "Point", "coordinates": [ 274.272933649161871, -259.05006257822248 ] } },
+{ "type": "Feature", "properties": { "id": 6, "container": "ux lab" }, "geometry": { "type": "Point", "coordinates": [ 363.28035043804698, -82.854140467947687 ] } },
+{ "type": "Feature", "properties": { "id": 7, "container": "ux lab" }, "geometry": { "type": "Point", "coordinates": [ 488.320493098473605, -170.323477138786274 ] } },
+{ "type": "Feature", "properties": { "id": 8, "container": "ux lab" }, "geometry": { "type": "Point", "coordinates": [ 638.448152672941774, -254.844806007509106 ] } },
+{ "type": "Feature", "properties": { "id": 9, "container": "ux lab" }, "geometry": { "type": "Point", "coordinates": [ 530.229036295368701, -319.189559742040387 ] } },
+{ "type": "Feature", "properties": { "id": 10, "container": "active hub" }, "geometry": { "type": "Point", "coordinates": [ 725.223705955863352, -230.700887196724381 ] } },
+{ "type": "Feature", "properties": { "id": 11, "container": "active hub" }, "geometry": { "type": "Point", "coordinates": [ 868.816280786143921, -254.255712791600644 ] } },
+{ "type": "Feature", "properties": { "id": 12, "container": "active hub" }, "geometry": { "type": "Point", "coordinates": [ 834.833634525256798, -333.277169253930083 ] } },
+{ "type": "Feature", "properties": { "id": 13, "container": "ndg space" }, "geometry": { "type": "Point", "coordinates": [ 757.633296230537667, -419.695191782090205 ] } },
+{ "type": "Feature", "properties": { "id": 14, "container": "ndg space" }, "geometry": { "type": "Point", "coordinates": [ 834.833634525256798, -401.608260325406377 ] } },
+{ "type": "Feature", "properties": { "id": 15, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 978.653409243655005, -524.406080392853823 ] } },
+{ "type": "Feature", "properties": { "id": 16, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 755.958790970811606, -535.339747476708567 ] } },
+{ "type": "Feature", "properties": { "id": 17, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 531.214110119750217, -535.339747476708567 ] } },
+{ "type": "Feature", "properties": { "id": 18, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 307.066337532164539, -535.339747476708567 ] } },
+{ "type": "Feature", "properties": { "id": 19, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 144.882934286012414, -411.200863247677603 ] } },
+{ "type": "Feature", "properties": { "id": 20, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 1044.828682467231602, -388.649418508687404 ] } },
+{ "type": "Feature", "properties": { "id": 21, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 872.536921151438605, -579.915467126271096 ] } },
+{ "type": "Feature", "properties": { "id": 22, "container": "workplace" }, "geometry": { "type": "Point", "coordinates": [ 402.389236545681229, -579.915467126271096 ] } }
+]
+}

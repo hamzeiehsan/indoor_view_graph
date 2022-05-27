@@ -10,7 +10,7 @@ from shapely.ops import unary_union, polygonize, nearest_points
 
 from Parameters import Parameters
 from Utility import Utility
-
+from Plotter import Plotter
 
 class ViewGraph:
     def __init__(self, isovist_object, container_info):
@@ -26,43 +26,100 @@ class ViewGraph:
     def load(self, address):
         self.rviewgraph = nx.read_graphml(address)
 
-    def calculate(self, isovist_object):
-        self.shapes_list = [isovist_object.shapes[i]['shape'] for i in range(0, len(isovist_object.shapes))]
-        #overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
-        #gdf = gpd.GeoDataFrame(geometry=overlay_regions)
-        dfs = []
-        for idx, shp in enumerate(self.shapes_list):
-            df = gpd.GeoDataFrame({'geometry': gpd.GeoSeries([shp]), 'idx:{}'.format(idx): 1})
-            df.simplify(0.000001)
-            dfs.append(df)
-        dff = dfs[0]
-        for df in dfs[1:]:
-            dff = dff.overlay(df, how='union')
-        dff = dff.explode()
-        signatures = []
-        for index_row, row in dff.iterrows():
-            signature = []
-            for idx in range(len(isovist_object.door_points)):
-                key = 'idx:{}'.format(idx)
-                if row[key] == 1:
-                    signature.append(idx)
-            signatures.append(signature)
-        regions = list(dff['geometry'])
-        print('region initial : {}'.format(len(regions)))
-        idxes = []
-        regions_copy = regions.copy()
-        big_regions = []
-        small_regions = []
-        for rid, region in enumerate(regions_copy):
-            if region.area > Parameters.min_area/10:
-                big_regions.append(region)
-                idxes.append(rid)
-            elif region.length > 0 and region.area > 0:
-            #     if region.length - region.intersection(isovist_object.space_shp).length > 0.0001 or\
-            #         region.length/region.area < 10000:
-                small_regions.append(region)
+    @staticmethod
+    def simplify_coordinates(polygons):
+        simplified = []
+        for polygon in polygons:
+            xy = polygon.exterior.xy
+            xs = xy[0]
+            ys = xy[1]
+            list_points = []
+            for idx, x in enumerate(xs):
+                y = ys[idx]
+                list_points.append(Point(round(x, 5), round(y, 5)))
+            simplified.append(Poly(list_points))
+        return simplified
 
-        all_regions = big_regions.copy()
+    def plot_region(self, isovist_object, rid):
+        plotter = Plotter(isovist_object)
+        r_x, r_y = Utility.save_print_geojson(list(self.regions_list[rid].exterior.coords))
+        plotter.add_poly(r_x, r_y, 'b-')
+        plotter.show()
+
+    @staticmethod
+    def plot_region2(isovist_object, region):
+        plotter = Plotter(isovist_object)
+        r_x, r_y = Utility.save_print_geojson(list(region.exterior.coords))
+        plotter.add_poly(r_x, r_y, 'b-')
+        plotter.show()
+
+    @staticmethod
+    def simplify_polygon(region):
+            b = region.boundary.coords
+            linestrings = [LineString(b[k:k + 2]) for k in range(len(b) - 1)]
+            coordinates = []
+            print(len(linestrings))
+            for idx, ls in enumerate(linestrings):
+                if idx == len(linestrings) - 1:
+                    ls2 = linestrings[0]
+                else:
+                    ls2 = linestrings[idx + 1]
+                angle = Utility.calculate_angle(list(ls.coords)[0], list(ls.coords)[1], list(ls2.coords)[1])
+                if abs(angle) < 1:
+                    continue
+                else:
+                    coordinates.append(Point(list(ls.coords)[1]))
+
+            return Poly(coordinates)
+
+    def plot_all_regions(self, isovist_object):
+        plotter = Plotter(isovist_object)
+        for region in self.regions_list:
+            r_x, r_y = Utility.save_print_geojson(list(region.exterior.coords))
+            plotter.add_poly(r_x, r_y, 'b-')
+        plotter.show()
+
+    def calculate(self, isovist_object):
+        self.shapes_list = ViewGraph.simplify_coordinates([isovist_object.shapes[i]['shape']
+                            for i in range(0, len(isovist_object.shapes))])
+        overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
+        gdf = gpd.GeoDataFrame(geometry=overlay_regions)
+        regions = list(gdf['geometry'])
+        # dfs = []
+        # for idx, shp in enumerate(self.shapes_list):
+        #     df = gpd.GeoDataFrame({'geometry': gpd.GeoSeries([shp]), 'idx:{}'.format(idx): 1})
+        #     df.simplify(0.00001)
+        #     dfs.append(df)
+        # dff = dfs[0]
+        # for df in dfs[1:]:
+        #     dff = gpd.overlay(dff, df, how='union')
+        #     dff = dff.explode()
+        # signatures = []
+        # for index_row, row in dff.iterrows():
+        #     signature = []
+        #     for idx in range(len(isovist_object.door_points)):
+        #         key = 'idx:{}'.format(idx)
+        #         if row[key] == 1:
+        #             signature.append(idx)
+        #     signatures.append(signature)
+        # regions = list(dff['geometry'])
+
+        print('region initial : {}'.format(len(regions)))
+
+        # idxes = []
+        # regions_copy = regions.copy()
+        # big_regions = []
+        # # small_regions = []
+        # for rid, region in enumerate(regions_copy):
+        #     if (region.length - region.intersection(isovist_object.space_shp).length > 2 * Parameters.epsilon
+        #         and region.area > Parameters.min_area/100) or \
+        #             region.area > Parameters.min_area:
+        #         big_regions.append(region)
+        #         idxes.append(rid)
+            # elif region.length > 0 and region.area > 0:
+            # #     if region.length - region.intersection(isovist_object.space_shp).length > 0.0001 or\
+            # #         region.length/region.area < 10000:
+            #     small_regions.append(region)
 
         # if len(small_regions) > 0:
         #     union_small = small_regions[0]
@@ -70,34 +127,37 @@ class ViewGraph:
         #         union_small = union_small.union(small_region)
         #     all_regions.append(union_small)
 
-        self.regions_list = []
-        for r in all_regions:
-            self.regions_list.append(r)
-        print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
-        self.signatures = [signatures[idx] for idx in idxes]
+        self.regions_list = regions
+        self.signatures = []
 
-        if len(self.regions_list) > 1:
-            connected_regions = []
-            self.calculate_adjacency_matrix()
-            for key in self.adjacency_matrix:
-                if len(self.adjacency_matrix[key]) > 0:
-                    connected_regions.append(key)
-            self.regions_list = [self.regions_list[idx] for idx in connected_regions]
-            self.signatures = [self.signatures[idx] for idx in connected_regions]
-        print('regions : {0}'.format(len(self.regions_list)))
+        self.plot_all_regions(isovist_object)
+        print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
+
+
+        # if len(self.regions_list) > 1:
+        #     connected_regions = []
+        #     self.calculate_adjacency_matrix()
+        #     for key in self.adjacency_matrix:
+        #         if len(self.adjacency_matrix[key]) > 0:
+        #             connected_regions.append(key)
+        #     self.regions_list = [self.regions_list[idx] for idx in connected_regions]
+        #     self.signatures = [self.signatures[idx] for idx in connected_regions]
+        # print('regions : {0}'.format(len(self.regions_list)))
 
         # calculate regions signatures
-        # print('calculating the visibility signatures...')
-        # self.signatures = []
-        # for oregion in self.regions_list:
-        #     center = oregion.centroid
-        #     self.signatures.append([self.shapes_list.index(shp) for shp in self.shapes_list if shp.contains(center)])
+        print('calculating the visibility signatures...')
+        self.signatures = []
+        for oregion in self.regions_list:
+            center = oregion.centroid
+            self.signatures.append([self.shapes_list.index(shp) for shp in self.shapes_list if shp.contains(center)])
 
         # adjacent regions
         print('calculating adjacency matrix for regions')
+
         self.calculate_adjacency_matrix()
 
         # constructing view graph for decomposed regions
+
         print('finding regions that contains doors/gateways and decision points')
         self.regions_info = {i: self.regions_list[i].centroid for i in range(len(self.regions_list))}
         self.regions_doors_info = {}
@@ -124,7 +184,6 @@ class ViewGraph:
                         self.regions_doors_info[chosen] = []
                     self.regions_doors_info[chosen].append(pid)
 
-
         self.rview_ids = {}
         self.rviews = {}
         self.rview_ls = {}
@@ -132,7 +191,6 @@ class ViewGraph:
         self.views_doors_info = {}
         self.to_door_vids = {}
         self.from_door_vids = {}
-
 
         for rid1, signature in enumerate(self.signatures):
             neighbours = self.adjacency_matrix[rid1]
@@ -152,7 +210,7 @@ class ViewGraph:
                     is_door = False
                 for apid2, p2 in enumerate(all_points):
                     is_door2 = True
-                    if apid2 == len(all_points) -1:
+                    if apid2 == len(all_points) - 1:
                         is_door2 = False
                     if apid != apid2:
                         if not self.view_intersects_holes(isovist_object, LineString([p, p2])) and \
@@ -178,11 +236,11 @@ class ViewGraph:
                     else:
                         ncontained = []
                     nall_points = [Point(isovist_object.door_points[p].x(), isovist_object.door_points[p].y())
-                                  for p in ncontained]
+                                   for p in ncontained]
                     nall_points.append(ncenter)
                     for napid, np in enumerate(nall_points):
                         is_door2 = True
-                        if napid == len(nall_points) -1:
+                        if napid == len(nall_points) - 1:
                             is_door2 = False
                         if not self.view_intersects_holes(isovist_object, LineString([p, np])) and \
                                 not self.view_intersects_boundary(isovist_object, LineString([p, np])):
@@ -349,9 +407,10 @@ class ViewGraph:
                     r_action[info['order']] = object
                 else:
                     f_action[info['order']] = object
-            self.v_attributes['{0}-V{1}'.format(self.name, vid)] = {'l_action': [l[1] for l in sorted(l_action.items())],
-                                      'f_action': [f[1] for f in sorted(f_action.items())],
-                                      'r_action': [r[1] for r in sorted(r_action.items())]}
+            self.v_attributes['{0}-V{1}'.format(self.name, vid)] = {
+                'l_action': [l[1] for l in sorted(l_action.items())],
+                'f_action': [f[1] for f in sorted(f_action.items())],
+                'r_action': [r[1] for r in sorted(r_action.items())]}
         nx.set_node_attributes(self.rviewgraph, self.v_attributes)
 
         # label edges (view->view)
@@ -443,7 +502,7 @@ class ViewGraph:
         landmark_signature = self.view_vision_signature(vv, door_points=isovist_object.landmarks_points)
         for lix in landmark_signature:
             points[self.landmark_info[lix]] = Point(isovist_object.landmarks_points[lix].x(),
-                                                      isovist_object.landmarks_points[lix].y())
+                                                    isovist_object.landmarks_points[lix].y())
         orders = self.ego_order(view, points)
         disappear_points = []
         for key, d in orders.items():
@@ -682,14 +741,14 @@ class ViewGraph:
                         instructions.append('move further and ' + act + ' in the first decision point')
         if len(temp) > 0:
             instructions.extend(self.minimal_description_follow(temp, temp_vids))
-        instructions[len(instructions)-1] = instructions[len(instructions) - 1] \
-                                            + ' and move forward until you reach the destination'
+        instructions[len(instructions) - 1] = instructions[len(instructions) - 1] \
+                                              + ' and move forward until you reach the destination'
         Utility.print_instructions(instructions)
         return instructions
 
     def generate_door_to_door_graph(self, isovist_object, only_doors=False):
         print('generate door-to-door graph, only_doors {} from view graph'.format(only_doors))
-        dtdgraph= nx.Graph()
+        dtdgraph = nx.Graph()
         dids = []
         edges = []
         connected = []
@@ -738,7 +797,7 @@ class ViewGraph:
         all_pvs = []
 
         path_graph = nx.complete_graph(len(isovist_object.door_points)
-                                        -isovist_object.door_idx)
+                                       - isovist_object.door_idx)
 
         all_vps_info = {}
         for did1, vid1 in self.views_doors_info.items():
@@ -779,12 +838,11 @@ class ViewGraph:
             spt_vp, spt_pv = self.shortest_path_regions(self.views_doors_info[idx1],
                                                         self.views_doors_info[idx2],
                                                         True)
-            if record[0]+isovist_object.door_idx not in connections.keys():
+            if record[0] + isovist_object.door_idx not in connections.keys():
                 connections[idx1] = 0
                 connections_details[idx1] = []
             connections[idx1] += 1
             connections_details[idx1].append(idx2)
-
 
             if idx2 not in connections.keys():
                 connections[idx2] = 0
@@ -818,16 +876,14 @@ class ViewGraph:
 
         return all_vps, all_pvs, spt_vps, spt_pvs, T
 
-
     @staticmethod
     def generate_titles(dict_dict):
         for kr, record in dict_dict.items():
             title = ''
             for key, val in record.items():
                 if key not in ['in', 'group']:
-                    title+='[{0}: {1}] '.format(key, val)
+                    title += '[{0}: {1}] '.format(key, val)
             record['title'] = title
-
 
     @staticmethod
     def generate_between_near(lefts, relationships_investigated, nplets, ncounter, references, bearing):
@@ -850,10 +906,13 @@ class ViewGraph:
                                         'reference_frame': 'relative',
                                         'bearing': bearing,
                                         'sp_relation': 'between',
-                                        'group':1}
-                                    references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
-                                    references[l1r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
-                                    references[l3r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 2, 'as': 'relatum'})
+                                        'group': 1}
+                                    references[l2r]['in'].append(
+                                        {'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                    references[l1r]['in'].append(
+                                        {'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                    references[l3r]['in'].append(
+                                        {'nid': 'n{}'.format(ncounter), 'pos': 2, 'as': 'relatum'})
                                     ncounter += 1
                                     relationships_investigated.append(expression)
                                 if o2 - o1 == 1:
@@ -861,11 +920,13 @@ class ViewGraph:
                                     if expression not in relationships_investigated:
                                         nplets['n{}'.format(ncounter)] = {
                                             'exp': '{0} near {1}'.
-                                            format(l2r, l1r), 'reference_frame': 'relative',
+                                                format(l2r, l1r), 'reference_frame': 'relative',
                                             'sp_relation': 'near',
-                                            'group':1}
-                                        references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
-                                        references[l1r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                            'group': 1}
+                                        references[l2r]['in'].append(
+                                            {'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                        references[l1r]['in'].append(
+                                            {'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                         ncounter += 1
                                         relationships_investigated.append(expression)
                                         relationships_investigated.append('{0} near {1}'.format(l1r, l2r))
@@ -876,9 +937,11 @@ class ViewGraph:
                                             'exp': '{0} near {1}'.
                                                 format(l3r, l2r), 'reference_frame': 'relative',
                                             'sp_relation': 'near',
-                                            'group':1}
-                                        references[l3r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
-                                        references[l2r]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
+                                            'group': 1}
+                                        references[l3r]['in'].append(
+                                            {'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
+                                        references[l2r]['in'].append(
+                                            {'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                         ncounter += 1
                                         relationships_investigated.append(expression)
                                         relationships_investigated.append('{0} near {1}'.format(l2r, l3r))
@@ -893,26 +956,26 @@ class ViewGraph:
         pcounter = 0
         for d, door in enumerate(isovist_object.door_points):
             if d < isovist_object.door_idx:
-                pids['place{}'.format(pcounter)] = {'type': 'door', 'group':2}
+                pids['place{}'.format(pcounter)] = {'type': 'door', 'group': 2}
             else:
-                pids['place{}'.format(pcounter)] = {'type': 'decision point', 'group':2}
-            references[self.door_info[d]] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3}
-            pcounter+=1
+                pids['place{}'.format(pcounter)] = {'type': 'decision point', 'group': 2}
+            references[self.door_info[d]] = {'place': 'place{}'.format(pcounter), 'in': [], 'group': 3}
+            pcounter += 1
         for l, landmark in enumerate(isovist_object.landmarks_points):
-            pids['place{}'.format(pcounter)] = {'type': 'landmark', 'group':2}
-            references[self.landmark_info[l]] = {'place': 'place{}'.format(pcounter), 'in': [], 'group':3,
+            pids['place{}'.format(pcounter)] = {'type': 'landmark', 'group': 2}
+            references[self.landmark_info[l]] = {'place': 'place{}'.format(pcounter), 'in': [], 'group': 3,
                                                  'label': self.landmark_info[l]}
-            pcounter+=1
+            pcounter += 1
         sids = {
             # 'front': {'relation': 'front', 'family': 'relative direction'},
-            'left': {'relation': 'left', 'family': 'relative direction', 'group':4},
-            'right': {'relation': 'right', 'family': 'relative direction', 'group':4},
-            'between': {'relation': 'between', 'family': 'ternary', 'group':4},
+            'left': {'relation': 'left', 'family': 'relative direction', 'group': 4},
+            'right': {'relation': 'right', 'family': 'relative direction', 'group': 4},
+            'between': {'relation': 'between', 'family': 'ternary', 'group': 4},
             # 'across': {'relation': 'across', 'family': 'ternary', 'group':4},
             # 'inside': {'relation': 'in', 'family': 'topological', 'group':4},
             # 'disjoint': {'relation': 'disjoint', 'family': 'topological', 'group':4},
-            'near': {'relation': 'near', 'family': 'distance', 'group':4}
-            }
+            'near': {'relation': 'near', 'family': 'distance', 'group': 4}
+        }
         # sid: {relation: '', family: ''}  # incomplete
 
         ncounter = 0
@@ -945,16 +1008,16 @@ class ViewGraph:
                                     'reference_frame': 'relative',
                                     'sp_relation': 'left',
                                     'place': {'id': fp, 'as': 'front', 'bearing': bearing},
-                                    'group':1}
+                                    'group': 1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
-                                ncounter+=1
+                                ncounter += 1
                                 nplets['n{}'.format(ncounter)] = {
                                     'exp': '{0} right of {1}'.format(rpr, lpr),
                                     'reference_frame': 'relative',
                                     'sp_relation': 'right',
                                     'place': {'id': fp, 'as': 'front', 'bearing': bearing},
-                                    'group':1}
+                                    'group': 1}
                                 references[lpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'relatum'})
                                 references[rpr]['in'].append({'nid': 'n{}'.format(ncounter), 'pos': 1, 'as': 'locatum'})
                                 ncounter += 1
@@ -980,7 +1043,6 @@ class ViewGraph:
         ViewGraph.generate_titles(references)
         place_graph.add_nodes_from([(rid, {'group': 3, 'title': references[rid]['title']})
                                     for rid in list(references.keys())])
-
 
         for r, vals in references.items():  # relations: reference -> pid, reference -> nid(s)
             pid = vals['place']

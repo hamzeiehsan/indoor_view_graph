@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [473.24781, -319.18956]}, "properties": {"id": 6, "container1": "corridor", "container2": "ux lab"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [618.262921, -319.18956]}, "properties": {"id": 15, "container1": "active hub", "container2": "ux lab"}}]}

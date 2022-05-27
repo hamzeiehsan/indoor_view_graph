@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[271.74978, -346.103202], [393.176563, -346.103202], [393.176563, -419.695192], [271.74978, -419.695192], [271.74978, -346.103202]]]]}, "properties": {"id": 2, "name": "emergency stairs", "full_name": "Emergency Stairs"}}]}

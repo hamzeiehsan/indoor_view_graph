@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[551.714736, -346.103202], [630.773559, -346.103202], [630.773559, -419.695192], [551.714736, -419.695192], [551.714736, -346.103202]]]]}, "properties": {"id": 5, "name": "male toilet", "full_name": "Men Toilet"}}]}
