@@ -9,7 +9,6 @@ import visilibity as vis
 from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point
-import geojson
 
 import Parameters
 
@@ -93,7 +92,7 @@ class Utility:
 
     @staticmethod
     def calculate_distance(d1, d2):
-        return math.sqrt(math.pow(d1.x - d2.x, 2)+math.pow(d1.y-d2.y, 2))*10000
+        return math.sqrt(math.pow(d1.x - d2.x, 2) + math.pow(d1.y - d2.y, 2)) * 10000
 
     @staticmethod
     def calculate_bearing(v):
@@ -193,14 +192,13 @@ class Utility:
     def create_subgraph(graph, node, radius, undirected=True):
         return nx.ego_graph(graph, node, radius=radius, undirected=undirected)
 
-
     @staticmethod
     def is_poly_cw(list_point):
         summation = 0
         for idx, p in enumerate(list_point):
             if idx < len(list_point) - 1:
                 p2 = list_point[idx + 1]
-                summation += (p2[0] - p[0])*(p2[1] + p[1])
+                summation += (p2[0] - p[0]) * (p2[1] + p[1])
         if summation > 0:
             return True
         return False

@@ -1,14 +1,17 @@
+import warnings
+
 import shapely.geometry
+from geojson import MultiPolygon, Feature, FeatureCollection, dump
+
 from Container import Container
 from Isovist import Isovist
+from Parameters import Parameters
 from Plotter import Plotter
 from Utility import Utility
 from ViewGraph import ViewGraph
-from geojson import MultiPolygon, Feature, FeatureCollection, dump
-import warnings
-
 
 warnings.filterwarnings("ignore")
+
 
 class IndoorEnvironment:
     def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):  # todo: link between containers
@@ -22,6 +25,7 @@ class IndoorEnvironment:
             print('environment files -- count is valid')
             for idx, pfile in enumerate(pfiles):
                 if 'workplace' not in pfile and 'room' not in pfile and 'focus' not in pfile:
+                # if True:
                     container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
                     self.containers.append(container)
                     self.containers_names.append(container.name)
@@ -65,20 +69,20 @@ class IndoorEnvironment:
             for i in range(1, len(container['geometry']['coordinates'][0])):
                 coords = container['geometry']['coordinates'][0][i]
                 # coords.reverse()
-                c_holes_features.append(Feature(geometry=MultiPolygon([[coords]]), properties={'id':i}))
+                c_holes_features.append(Feature(geometry=MultiPolygon([[coords]]), properties={'id': i}))
             holes_features = FeatureCollection(c_holes_features)
-            with open('{0}{1}-pfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+            with open('{0}{1}-pfile.geojson'.format(address, name), 'w', encoding='utf-8') as fp:
                 dump(polygon_features, fp)
-            pfiles.append('{0}{1}-pfile.geojson'.format(address,name))
-            with open('{0}{1}-hfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+            pfiles.append('{0}{1}-pfile.geojson'.format(address, name))
+            with open('{0}{1}-hfile.geojson'.format(address, name), 'w', encoding='utf-8') as fp:
                 dump(holes_features, fp)
-            hfiles.append('{0}{1}-hfile.geojson'.format(address,name))
-            with open('{0}{1}-lfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+            hfiles.append('{0}{1}-hfile.geojson'.format(address, name))
+            with open('{0}{1}-lfile.geojson'.format(address, name), 'w', encoding='utf-8') as fp:
                 dump(landmarks_features, fp)
-            lfiles.append('{0}{1}-lfile.geojson'.format(address,name))
-            with open('{0}{1}-dfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+            lfiles.append('{0}{1}-lfile.geojson'.format(address, name))
+            with open('{0}{1}-dfile.geojson'.format(address, name), 'w', encoding='utf-8') as fp:
                 dump(doors_features, fp)
-            dfiles.append('{0}{1}-dfile.geojson'.format(address,name))
+            dfiles.append('{0}{1}-dfile.geojson'.format(address, name))
             dpoint_features = []
             if generate_dpoints:
                 container_shape = shapely.geometry.shape(container['geometry'])
@@ -90,9 +94,9 @@ class IndoorEnvironment:
                     if dp['properties']['container'] == name:
                         dpoint_features.append(dp)
                 dpoint_features = FeatureCollection(dpoint_features)
-            with open('{0}{1}-dpfile.geojson'.format(address,name), 'w', encoding='utf-8') as fp:
+            with open('{0}{1}-dpfile.geojson'.format(address, name), 'w', encoding='utf-8') as fp:
                 dump(dpoint_features, fp)
-            dpfiles.append('{0}{1}-dpfile.geojson'.format(address,name))
+            dpfiles.append('{0}{1}-dpfile.geojson'.format(address, name))
         return pfiles, hfiles, dfiles, dpfiles, lfiles
 
     def cviewgraph(self, cidx):
@@ -126,7 +130,7 @@ class IndoorEnvironment:
                     c_name2 = container2.name
                     for did, d in enumerate(container.doors):
                         if d['properties']['container1'] == container2.name_id or \
-                            d['properties']['container2'] == container2.name_id:
+                                d['properties']['container2'] == container2.name_id:
                             did2 = -1
                             for tdid2, d2 in enumerate(container2.doors):
                                 if d['properties']['id'] == d2['properties']['id']:
@@ -135,16 +139,22 @@ class IndoorEnvironment:
                             if did2 != -1:
                                 for vvto1 in vgs[idx].to_door_vids[did]:
                                     for vvfrom2 in vgs[idx2].from_door_vids[did2]:
+                                        v1 = vgs[idx].rviews[vvto1]
                                         vto1 = '{0}-V{1}'.format(c_name, vvto1)
                                         vfrom2 = '{0}-V{1}'.format(c_name2, vvfrom2)
-                                        self.graph.add_edge(vto1, vfrom2, weight=0,
+                                        self.graph.add_edge(vto1, vfrom2, weight=Parameters.door_weight +
+                                                                                 Utility.calculate_distance(v1[0],
+                                                                                                            v1[1]),
                                                             label='Enter {}'.format(container.door_names[did]),
                                                             action='enter')
                                 for vvto2 in vgs[idx2].to_door_vids[did2]:
                                     for vvfrom1 in vgs[idx].from_door_vids[did]:
+                                        v1 = vgs[idx2].rviews[vvto2]
                                         vto2 = '{0}-V{1}'.format(c_name2, vvto2)
                                         vfrom1 = '{0}-V{1}'.format(c_name, vvfrom1)
-                                        self.graph.add_edge(vto2, vfrom1, weight=0,
+                                        self.graph.add_edge(vto2, vfrom1, weight=Parameters.door_weight +
+                                                                                 Utility.calculate_distance(v1[0],
+                                                                                                            v1[1]),
                                                             label='Enter {}'.format(container2.door_names[did2]),
                                                             action='enter')
 
@@ -178,7 +188,6 @@ class IndoorEnvironment:
         return spath, path_view
 
 
-
 if __name__ == '__main__':
     # test environment
     # address = 'envs/hypo/'
@@ -208,11 +217,12 @@ if __name__ == '__main__':
 
     # create view graph
     vgs, isovist_objects = ie.construct_view_graph()
-    vg = vgs[0]
-    isovist_object = isovist_objects[0]
+    cidx = ie.containers_names.index('Active Hub')
+    vg = vgs[cidx]
+    isovist_object = isovist_objects[cidx]
 
     # calculate shortest path and generate verbal description
-    vp, pv= vg.shortest_path_regions(0, len(vg.regions_list)-1)
+    vp, pv = vg.shortest_path_regions(0, len(vg.regions_list) - 1)
 
     # derive door-to-door visibility graph (doors and decision points)
     connected, dtd_graph = vg.generate_door_to_door_graph(isovist_object)
@@ -221,7 +231,7 @@ if __name__ == '__main__':
     connected2, dtd_graph2 = vg.generate_door_to_door_graph(isovist_object, only_doors=True)
 
     # derive all shortest path visibility graph and spanning tree
-    vps, pvs, st_vps, st_pvs, nvgraph =\
+    vps, pvs, st_vps, st_pvs, nvgraph = \
         vg.generate_navigation_graph(isovist_object, indirect_access=False)
 
     # derive place graph

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from pyvis.network import Network
 
+
 class Plotter:
     def __init__(self, isovist=None):
         self.fig, self.ax = plt.subplots()

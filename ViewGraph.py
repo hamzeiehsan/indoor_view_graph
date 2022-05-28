@@ -1,6 +1,6 @@
 import math
-import statistics
 from itertools import count as countfunc
+
 import geopandas as gpd
 import networkx as nx
 from numpy import tan
@@ -9,8 +9,9 @@ from shapely.geometry import Polygon as Poly, LinearRing
 from shapely.ops import unary_union, polygonize, nearest_points
 
 from Parameters import Parameters
-from Utility import Utility
 from Plotter import Plotter
+from Utility import Utility
+
 
 class ViewGraph:
     def __init__(self, isovist_object, container_info):
@@ -27,7 +28,7 @@ class ViewGraph:
         self.rviewgraph = nx.read_graphml(address)
 
     @staticmethod
-    def simplify_coordinates(polygons):
+    def simplify_coordinates(polygons, precision):
         simplified = []
         for polygon in polygons:
             xy = polygon.exterior.xy
@@ -36,7 +37,7 @@ class ViewGraph:
             list_points = []
             for idx, x in enumerate(xs):
                 y = ys[idx]
-                list_points.append(Point(round(x, 5), round(y, 5)))
+                list_points.append(Point(round(x, precision), round(y, precision)))
             simplified.append(Poly(list_points))
         return simplified
 
@@ -55,22 +56,22 @@ class ViewGraph:
 
     @staticmethod
     def simplify_polygon(region):
-            b = region.boundary.coords
-            linestrings = [LineString(b[k:k + 2]) for k in range(len(b) - 1)]
-            coordinates = []
-            print(len(linestrings))
-            for idx, ls in enumerate(linestrings):
-                if idx == len(linestrings) - 1:
-                    ls2 = linestrings[0]
-                else:
-                    ls2 = linestrings[idx + 1]
-                angle = Utility.calculate_angle(list(ls.coords)[0], list(ls.coords)[1], list(ls2.coords)[1])
-                if abs(angle) < 1:
-                    continue
-                else:
-                    coordinates.append(Point(list(ls.coords)[1]))
+        b = region.boundary.coords
+        linestrings = [LineString(b[k:k + 2]) for k in range(len(b) - 1)]
+        coordinates = []
+        print(len(linestrings))
+        for idx, ls in enumerate(linestrings):
+            if idx == len(linestrings) - 1:
+                ls2 = linestrings[0]
+            else:
+                ls2 = linestrings[idx + 1]
+            angle = Utility.calculate_angle(list(ls.coords)[0], list(ls.coords)[1], list(ls2.coords)[1])
+            if abs(angle) < 1:
+                continue
+            else:
+                coordinates.append(Point(list(ls.coords)[1]))
 
-            return Poly(coordinates)
+        return Poly(coordinates)
 
     def plot_all_regions(self, isovist_object):
         plotter = Plotter(isovist_object)
@@ -81,7 +82,8 @@ class ViewGraph:
 
     def calculate(self, isovist_object):
         self.shapes_list = ViewGraph.simplify_coordinates([isovist_object.shapes[i]['shape']
-                            for i in range(0, len(isovist_object.shapes))])
+                                                           for i in range(0, len(isovist_object.shapes))],
+                                                          Parameters.precision)
         overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
         gdf = gpd.GeoDataFrame(geometry=overlay_regions)
         regions = list(gdf['geometry'])
@@ -116,10 +118,10 @@ class ViewGraph:
         #             region.area > Parameters.min_area:
         #         big_regions.append(region)
         #         idxes.append(rid)
-            # elif region.length > 0 and region.area > 0:
-            # #     if region.length - region.intersection(isovist_object.space_shp).length > 0.0001 or\
-            # #         region.length/region.area < 10000:
-            #     small_regions.append(region)
+        # elif region.length > 0 and region.area > 0:
+        # #     if region.length - region.intersection(isovist_object.space_shp).length > 0.0001 or\
+        # #         region.length/region.area < 10000:
+        #     small_regions.append(region)
 
         # if len(small_regions) > 0:
         #     union_small = small_regions[0]
@@ -132,7 +134,6 @@ class ViewGraph:
 
         self.plot_all_regions(isovist_object)
         print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
-
 
         # if len(self.regions_list) > 1:
         #     connected_regions = []
@@ -172,7 +173,7 @@ class ViewGraph:
                     done = pid
                     break
             if done != pid:
-                min_dr = 1000
+                min_dr = Parameters.max_distance
                 chosen = None
                 for rid, r in enumerate(self.regions_list):
                     dr = r.distance(dpoint)
@@ -373,7 +374,7 @@ class ViewGraph:
                             self.rviewgraph.add_edge(
                                 '{0}-V{1}'.format(self.name, dvids[0]),
                                 '{0}-V{1}'.format(self.name, dvids2[0]),
-                                weight=0, label='turn')
+                                weight=Parameters.turn_weight, label='turn')
                 for i in range(1, len(dvids)):
                     v0 = dviews[i - 1]
                     v1 = dviews[i]
@@ -474,7 +475,7 @@ class ViewGraph:
 
     def ego_order(self, view_points, points):
         start = view_points[0]
-        end = Utility.calculate_coordinates(view_points, 0, 20)
+        end = Utility.calculate_coordinates(view_points, 0, Parameters.max_distance)
         line = LineString([start, end])
         distances = {}
         for idx, p in points.items():
@@ -487,7 +488,7 @@ class ViewGraph:
 
         view = self.rviews[view_idx]
         ids = self.rview_ids[view_idx]
-        if self.rview_ls[view_idx].length < 0.005:
+        if self.rview_ls[view_idx].length < Parameters.epsilon:
             return [{'ids': ids, 'view': view}]
         destinations = []
         if ids[1] in self.regions_doors_info.keys():
@@ -817,7 +818,8 @@ class ViewGraph:
                         all_vps.append(vp)
                         all_pvs.append(pv)
                     else:
-                        path_graph[did1 - isovist_object.door_idx][did2 - isovist_object.door_idx]['weight'] = 100000
+                        path_graph[did1 - isovist_object.door_idx][did2 - isovist_object.door_idx][
+                            'weight'] = Parameters.max_distance
         T = nx.minimum_spanning_tree(path_graph, weight='weight')
         st = sorted(T.edges(data=True))
         spt_vps = []
@@ -855,7 +857,7 @@ class ViewGraph:
 
         for door in range(isovist_object.door_idx):
             dvid = self.views_doors_info[door]
-            max_weight = 10000
+            max_weight = Parameters.max_distance
             selected_vp = None
             selected_pv = None
             for vids in spt_vps:
@@ -1137,7 +1139,7 @@ class ViewGraph:
                 if i == j:
                     continue
                 rj = self.regions_list[j]
-                if ri.touches(rj):
+                if ri.touches(rj) and ri.intersection(rj).length > Parameters.epsilon:
                     if isinstance(ri.intersection(rj), Point):
                         continue
                     self.adjacency_matrix[i].append(j)
