@@ -553,6 +553,14 @@ class ViewGraph:
             vpath = vpath[:-1]
             if len(vpath) >= 2 and self.rview_ids[vpath[0]][0] == self.rview_ids[vpath[1]][0]:
                 vpath = vpath[1:]
+        else:
+            if len(vpath) >= 2:
+                if self.rviewgraph['{0}-V{1}'.format(self.name, vpath[0])] \
+                ['{0}-V{1}'.format(self.name, vpath[1])]['label'] == 'turn':
+                    vpath = vpath[1:]
+                if self.rviewgraph['{0}-V{1}'.format(self.name, vpath[-2])] \
+                ['{0}-V{1}'.format(self.name, vpath[-1])]['label'] == 'turn':
+                    vpath = vpath[:-1]
 
         for vid in vpath:
             path_view.append(self.rviews[vid])
@@ -792,19 +800,17 @@ class ViewGraph:
             if did in dids:
                 return rid
 
-    def generate_navigation_graph(self, isovist_object, indirect_access=False):
+    def generate_navigation_graph(self, isovist_object, indirect_access=True):
         print('derive navigation graph using spanning tree from viewgraph')
         all_vps = []
         all_pvs = []
 
-        path_graph = nx.complete_graph(len(isovist_object.door_points)
-                                       - isovist_object.door_idx)
+        path_graph = nx.complete_graph(len(isovist_object.door_points) - isovist_object.door_idx)
 
         all_vps_info = {}
         for did1, vid1 in self.views_doors_info.items():
             rid1 = self.get_door_region(did1)
             for did2, vid2 in self.views_doors_info.items():
-
                 if did1 >= isovist_object.door_idx and did2 >= isovist_object.door_idx \
                         and vid1 != vid2:
                     if indirect_access or did2 in self.signatures[rid1]:
@@ -855,26 +861,26 @@ class ViewGraph:
             spt_vps.append(spt_vp)
             spt_pvs.append(spt_pv)
 
-        for door in range(isovist_object.door_idx):
-            dvid = self.views_doors_info[door]
-            max_weight = Parameters.max_distance
-            selected_vp = None
-            selected_pv = None
-            for vids in spt_vps:
-                for vid in vids:
-                    try:
-                        vp, pv = self.shortest_path_regions(dvid, vid, True)
-                        vp_temp = ['{0}-V{1}'.format(self.name, idx) for idx in vp]
-                        w = nx.path_weight(self.rviewgraph, vp_temp, weight='weight')
-                        if w < max_weight:
-                            max_weight = w
-                            selected_vp = vp
-                            selected_pv = pv
-                    except:
-                        print('no path from {0} to {1}'.format(door, vid))
-            if selected_vp is not None:
-                spt_pvs.append(selected_pv)
-                spt_vps.append(selected_vp)
+        # for door in range(isovist_object.door_idx):
+        #     dvid = self.views_doors_info[door]
+        #     max_weight = Parameters.max_distance
+        #     selected_vp = None
+        #     selected_pv = None
+        #     for vids in spt_vps:
+        #         for vid in vids:
+        #             try:
+        #                 vp, pv = self.shortest_path_regions(dvid, vid, True)
+        #                 vp_temp = ['{0}-V{1}'.format(self.name, idx) for idx in vp]
+        #                 w = nx.path_weight(self.rviewgraph, vp_temp, weight='weight')
+        #                 if w < max_weight:
+        #                     max_weight = w
+        #                     selected_vp = vp
+        #                     selected_pv = pv
+        #             except:
+        #                 print('no path from {0} to {1}'.format(door, vid))
+        #     if selected_vp is not None:
+        #         spt_pvs.append(selected_pv)
+        #         spt_vps.append(selected_vp)
 
         return all_vps, all_pvs, spt_vps, spt_pvs, T
 
