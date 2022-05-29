@@ -95,7 +95,7 @@ class Utility:
         return math.sqrt(math.pow(d1.x - d2.x, 2) + math.pow(d1.y - d2.y, 2)) * 10000
 
     @staticmethod
-    def calculate_bearing(v):
+    def calculate_bearing_lat_long(v):
         lat1 = v[0].y
         lat2 = v[1].y
         lon1 = v[0].x
@@ -106,11 +106,40 @@ class Utility:
         return (degrees(arctan2(X, Y)) + 360) % 360
 
     @staticmethod
-    def calculate_coordinates(v, angle, d):
+    def calculate_bearing_x_y(v):
+        y1 = v[0].y
+        y2 = v[1].y
+        x1 = v[0].x
+        x2 = v[1].x
+        delta = 0
+        if x2 > x1 and y2 < y1:
+            delta = 90
+        elif x2 < x1 and y2 < y1:
+            delta = 180
+        elif x2 < x1 and y2 > y1:
+            delta = 270
+        return degrees(math.atan2(abs(v[0].y - v[1].y), abs(v[0].x - v[1].x))) + delta
+
+    @staticmethod
+    def calculate_bearing(v, xy=True):
+        if xy:
+            return Utility.calculate_bearing_x_y(v)
+        return Utility.calculate_bearing_lat_long(v)
+
+    @staticmethod
+    def calculate_coordinates(v, angle, d, xy=True):
         bearing = Utility.calculate_bearing(v)
-        nbearing = bearing + angle
+        nbearing = (bearing + angle)%360
+        if xy:
+            return Utility.calculate_coordinates_xy(v, d, nbearing)
         x = v[0].x + d * sin(np.deg2rad(nbearing))
-        y = v[1].y + d * cos(np.deg2rad(nbearing))
+        y = v[0].y + d * cos(np.deg2rad(nbearing))
+        return Point(x, y)
+
+    @staticmethod
+    def calculate_coordinates_xy(v, d, nbearing):
+        x = v[0].x + d * cos(np.deg2rad(nbearing))
+        y = v[0].y + d * sin(np.deg2rad(nbearing))
         return Point(x, y)
 
     @staticmethod
