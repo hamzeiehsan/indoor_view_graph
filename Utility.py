@@ -1,6 +1,5 @@
 import itertools
 import math
-
 import geojson
 import networkx as nx
 import numpy as np
@@ -8,7 +7,8 @@ import skgeom as sg
 import visilibity as vis
 from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
-from shapely.geometry import shape, Point
+from shapely.geometry import shape, Point, LineString
+from shapely.affinity import rotate, scale
 
 import Parameters
 
@@ -128,19 +128,24 @@ class Utility:
 
     @staticmethod
     def calculate_coordinates(v, angle, d, xy=True):
+        if xy:
+            return Utility.calculate_coordinates_xy(v, angle, d)
         bearing = Utility.calculate_bearing(v)
         nbearing = (bearing + angle)%360
-        if xy:
-            return Utility.calculate_coordinates_xy(v, d, nbearing)
         x = v[0].x + d * sin(np.deg2rad(nbearing))
         y = v[0].y + d * cos(np.deg2rad(nbearing))
         return Point(x, y)
 
     @staticmethod
-    def calculate_coordinates_xy(v, d, nbearing):
-        x = v[0].x + d * cos(np.deg2rad(nbearing))
-        y = v[0].y + d * sin(np.deg2rad(nbearing))
-        return Point(x, y)
+    def calculate_coordinates_xy(v, angle, d):
+        p1 = v[0]
+        vl = LineString(v)
+        vlr = rotate(vl, angle, origin=p1)
+        vlrs = scale(vlr, xfact=d/(vlr.length+1), yfact=d/(vlr.length+1), origin=p1)
+        if len(vlrs.boundary.geoms) > 1:
+            return vlrs.boundary.geoms[1]
+        else:
+            return p1
 
     @staticmethod
     def slope(x1, y1, x2, y2):  # Line slope given two points:
