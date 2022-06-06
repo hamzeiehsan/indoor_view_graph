@@ -189,7 +189,17 @@ class IndoorEnvironment:
 
 
 if __name__ == '__main__':
-    # test environment
+    # Basic environment
+    address = 'envs/basic/'
+    pfiles = ['t_bound.geojson']
+    hfiles = [None]
+    dfiles = ['t_doors.geojson']
+    dpfiles = [None]
+    lfiles = ['t_landmarks.geojson']
+    # create an indoor environment
+    ie = IndoorEnvironment(address, pfiles, hfiles, dfiles, dpfiles, lfiles)
+
+    ## Hypo environment
     # address = 'envs/hypo/'
     # pfiles = ['hypo_env.geojson']
     # hfiles = ['hypo_holes.geojson']
@@ -199,11 +209,12 @@ if __name__ == '__main__':
     # # create an indoor environment
     # ie = IndoorEnvironment(address, pfiles, hfiles, dfiles, dpfiles, lfiles)
 
-    address = 'envs/mc-floor-5/'
-    pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
-        address, 'containers.geojson', 'doors.geojson', 'landmarks.geojson')
+    ## MC5 example
+    # address = 'envs/mc-floor-5/'
+    # pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
+    #     address, 'containers.geojson', 'doors.geojson', 'landmarks.geojson')
     # create an indoor environment
-    ie = IndoorEnvironment('', pfiles, hfiles, dfiles, dpfiles, lfiles)
+    # ie = IndoorEnvironment('', pfiles, hfiles, dfiles, dpfiles, lfiles)
 
     # containers = ['Workplace', 'E_Corridor', 'Active_Hub', 'UX_Lab', 'M_Toilet']
     # pfiles = ['{}-pfile.geojson'.format(container) for container in containers]

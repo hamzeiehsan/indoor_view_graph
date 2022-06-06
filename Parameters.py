@@ -1,4 +1,5 @@
 class Parameters:
+    ## test example
     # epsilon = 0.00001
     # door_weight = 0.5
     # turn_weight = 0.0001
@@ -8,6 +9,8 @@ class Parameters:
     # max_distance = 1000
     # min_area = 0.0000005
     # max_collect_geom = 0.002
+
+    # real world example
     epsilon = 0.01
     door_weight = 50
     turn_weight = 0.05
