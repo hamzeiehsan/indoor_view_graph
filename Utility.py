@@ -205,14 +205,21 @@ class Utility:
         return points_to_keep
 
     @staticmethod
-    def extract_decision_points(area_shp, skeleton, start_id=0):
+    def extract_decision_points(area_shp, skeleton, start_id=0, doors=[]):
         dpoints = []
         points = []
         for v in skeleton.vertices:
             p = Point(v.point.x(), v.point.y())
             if area_shp.contains(p):
+
                 points.append(p)
-        filtered_points = Utility.collect_points(points)
+        rm_points = []
+        for d in doors:
+            for p in points:
+                if d.distance(p) <= Parameters.Parameters.max_collect_geom/2:
+                    rm_points.append(p)
+                    break
+        filtered_points = Utility.collect_points([p for p in points if p not in rm_points])
         for p in filtered_points:
             f = geojson.Feature(geometry=geojson.Point((p.x, p.y)),
                                 properties={'id': start_id, 'type': 'dt'})

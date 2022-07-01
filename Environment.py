@@ -52,9 +52,11 @@ class IndoorEnvironment:
         for container in containers['features']:
             name = container['properties']['name']
             doors_features = []
+            doors_points = []
             for d in doors['features']:
                 if d['properties']['container1'] == name or d['properties']['container2'] == name:
                     doors_features.append(d)
+                    doors_points.append(shapely.geometry.Point(d['geometry']['coordinates'][0], d['geometry']['coordinates'][1]))
             doors_features = FeatureCollection(doors_features)
             landmarks_features = []
             for l in landmarks['features']:
@@ -88,7 +90,7 @@ class IndoorEnvironment:
                 container_shape = shapely.geometry.shape(container['geometry'])
                 skel = Utility.generate_skeleton(polygon_features,
                                                  holes_features['features'])
-                dpoint_features = Utility.extract_decision_points(container_shape, skel)
+                dpoint_features = Utility.extract_decision_points(container_shape, skel, doors=doors_points)
             else:
                 for dp in dpoints['features']:
                     if dp['properties']['container'] == name:
