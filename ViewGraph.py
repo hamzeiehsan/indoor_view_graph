@@ -111,29 +111,17 @@ class ViewGraph:
         for r in regions:
             self.regions_list.extend(Utility.convex_decomposition(r))
 
+        # print('region initial : {}'.format(len(regions)))
+        # regions_copy = []
+        # for r in regions:
+        #     regions_copy.extend(Utility.convex_decomposition(r))
         # idxes = []
-        # regions_copy = regions.copy()
         # big_regions = []
-        # # small_regions = []
         # for rid, region in enumerate(regions_copy):
-        #     if (region.length - region.intersection(isovist_object.space_shp).length > 2 * Parameters.epsilon
-        #         and region.area > Parameters.min_area/100) or \
-        #             region.area > Parameters.min_area:
+        #     if region.area > Parameters.min_area:
         #         big_regions.append(region)
         #         idxes.append(rid)
-        # elif region.length > 0 and region.area > 0:
-        # #     if region.length - region.intersection(isovist_object.space_shp).length > 0.0001 or\
-        # #         region.length/region.area < 10000:
-        #     small_regions.append(region)
-
-        # if len(small_regions) > 0:
-        #     union_small = small_regions[0]
-        #     for small_region in small_regions:
-        #         union_small = union_small.union(small_region)
-        #     all_regions.append(union_small)
-
-        # self.regions_list = regions
-        # self.signatures = []
+        # self.regions_list = big_regions
 
         self.plot_all_regions(isovist_object)
         print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
@@ -158,7 +146,7 @@ class ViewGraph:
         # adjacent regions
         print('calculating adjacency matrix for regions')
 
-        self.calculate_adjacency_matrix()
+        self.calculate_adjacency_matrix(isovist_object)
 
         # constructing view graph for decomposed regions
 
@@ -1145,6 +1133,32 @@ class ViewGraph:
             if r.area < Parameters.min_area:
                 return False
         return True
+
+    def calculate_adjacency_matrix_ec(self, isovist_object):
+        self.adjacency_matrix = {}
+        for i in range(0, len(self.regions_list)):
+            ri = self.regions_list[i]
+            ric = ri.centroid
+            if i not in self.adjacency_matrix.keys():
+                self.adjacency_matrix[i] = []
+            for j in range(0, len(self.regions_list)):
+                if i == j:
+                    continue
+                rj = self.regions_list[j]
+                rjc = rj.centroid
+                ij_line = LineString([ric, rjc])
+                ij_intersection = isovist_object.space_shp.intersection(ij_line)
+                if isinstance(ij_intersection, LineString) \
+                    and (ij_line.length - ij_intersection.length)/ij_line.length < Parameters.epsilon:
+                    self.adjacency_matrix[i].append(j)
+                    if j not in self.adjacency_matrix.keys():
+                        self.adjacency_matrix[j] = [i]
+                    else:
+                        self.adjacency_matrix[j].append(i)
+        if len(self.adjacency_matrix) == 0:
+            self.adjacency_matrix[0] = []
+        for key, vals in self.adjacency_matrix.items():
+            self.adjacency_matrix[key] = list(set(self.adjacency_matrix[key]))
 
     def calculate_adjacency_matrix(self):
         self.adjacency_matrix = {}
