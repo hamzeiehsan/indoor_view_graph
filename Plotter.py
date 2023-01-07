@@ -27,6 +27,9 @@ class Plotter:
         plt.plot([d.x() for d in points], [d.y() for d in points],
                  color, label=label)
 
+    def add_point_shapely(self, point, label='Point', color='go'):
+        plt.plot([point.x], [point.y], color, label)
+
     def add_points_lines(self, points_list, is_vis=True, color='blue'):
         for twopoints in points_list:
             if is_vis:
