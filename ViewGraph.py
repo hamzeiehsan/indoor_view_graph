@@ -107,6 +107,9 @@ class ViewGraph:
         # regions = list(dff['geometry'])
 
         print('region initial : {}'.format(len(regions)))
+        self.regions_list = []
+        for r in regions:
+            self.regions_list.extend(Utility.convex_decomposition(r))
 
         # idxes = []
         # regions_copy = regions.copy()
@@ -129,8 +132,8 @@ class ViewGraph:
         #         union_small = union_small.union(small_region)
         #     all_regions.append(union_small)
 
-        self.regions_list = regions
-        self.signatures = []
+        # self.regions_list = regions
+        # self.signatures = []
 
         self.plot_all_regions(isovist_object)
         print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))

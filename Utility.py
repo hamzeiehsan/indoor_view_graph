@@ -9,6 +9,7 @@ from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point, LineString
 from shapely.affinity import rotate, scale
+from py2d.Math import Polygon as PolyPy2D
 
 import Parameters
 
@@ -251,3 +252,39 @@ class Utility:
     @staticmethod
     def shortest_path(graph, n1, n2):
         return nx.shortest_path(graph, n1, n2, weight='weight')
+
+    @staticmethod
+    def is_convex(polygon):
+        if (polygon.convex_hull.area-polygon.area)/polygon.area < Parameters.Parameters.epsilon:
+            return True
+        return False
+
+    @staticmethod
+    def toPolyPy2D(polygon):
+        xy_tuples = []
+        xys = polygon.boundary.coords.xy
+        xlist = list(xys[0])
+        ylist = list(xys[1])
+        for idx, x in enumerate(xlist):
+            if idx < len(xlist) - 1:
+                xy_tuples.append([x, ylist[idx]])
+        return PolyPy2D.from_tuples(xy_tuples)
+
+
+    @staticmethod
+    def fromPolyPy2D(polyPy2D):
+        xlist = []
+        ylist = []
+        for p in polyPy2D.points:
+            xlist.append(p.x)
+            ylist.append(p.y)
+        xlist.append(polyPy2D.points[0].x)
+        ylist.append(polyPy2D.points[0].y)
+        return shape(Utility.to_polygon_geojson(xlist, ylist))
+
+    @staticmethod
+    def convex_decomposition(polygon):
+        if Utility.is_convex(polygon):
+            return [polygon]
+        py2dpoly = Utility.toPolyPy2D(polygon)
+        return [Utility.fromPolyPy2D(poly) for poly in PolyPy2D.convex_decompose(py2dpoly, [])]
