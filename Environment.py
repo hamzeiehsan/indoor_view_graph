@@ -142,23 +142,27 @@ class IndoorEnvironment:
                                 for vvto1 in vgs[idx].to_door_vids[did]:
                                     for vvfrom2 in vgs[idx2].from_door_vids[did2]:
                                         v1 = vgs[idx].rviews[vvto1]
+                                        v2 = vgs[idx2].rviews[vvfrom2]
                                         vto1 = '{0}-V{1}'.format(c_name, vvto1)
                                         vfrom2 = '{0}-V{1}'.format(c_name2, vvfrom2)
-                                        self.graph.add_edge(vto1, vfrom2, weight=Parameters.door_weight +
-                                                                                 Utility.calculate_distance(v1[0],
-                                                                                                            v1[1]),
-                                                            label='Enter {}'.format(container.door_names[did]),
-                                                            action='enter')
+                                        self.graph.add_edge(
+                                            vto1, vfrom2,
+                                            weight=Parameters.door_weight + Utility.calculate_distance(v1[0], v1[1]),
+                                            label='Enter {0} and {1}'.format(container.door_names[did],
+                                                                   Utility.calculate_turn_follow(v1, v2)),
+                                            action='enter')
                                 for vvto2 in vgs[idx2].to_door_vids[did2]:
                                     for vvfrom1 in vgs[idx].from_door_vids[did]:
                                         v1 = vgs[idx2].rviews[vvto2]
+                                        v2 = vgs[idx].rviews[vvfrom1]
                                         vto2 = '{0}-V{1}'.format(c_name2, vvto2)
                                         vfrom1 = '{0}-V{1}'.format(c_name, vvfrom1)
-                                        self.graph.add_edge(vto2, vfrom1, weight=Parameters.door_weight +
-                                                                                 Utility.calculate_distance(v1[0],
-                                                                                                            v1[1]),
-                                                            label='Enter {}'.format(container2.door_names[did2]),
-                                                            action='enter')
+                                        self.graph.add_edge(
+                                            vto2, vfrom1,
+                                            weight=Parameters.door_weight + Utility.calculate_distance(v1[0], v1[1]),
+                                            label='Enter {0} and {1}'.format(container2.door_names[did2],
+                                                                             Utility.calculate_turn_follow(v1, v2)),
+                                            action='enter')
 
                 connected_containers.append(container)
         self.cviewgraphs = vgs

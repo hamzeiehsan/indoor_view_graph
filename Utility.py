@@ -112,14 +112,17 @@ class Utility:
         y2 = v[1].y
         x1 = v[0].x
         x2 = v[1].x
-        delta = 0
-        if x2 > x1 and y2 < y1:
-            delta = 90
-        elif x2 < x1 and y2 < y1:
-            delta = 180
-        elif x2 < x1 and y2 > y1:
-            delta = 270
-        return degrees(math.atan2(abs(v[0].y - v[1].y), abs(v[0].x - v[1].x))) + delta
+        b_degree = degrees(math.atan2(abs(v[0].y - v[1].y), abs(v[0].x - v[1].x)))
+        if x2 >= x1 and y2 >= y1:
+            return 90 - b_degree
+        elif x2 >= x1 and y2 <= y1:
+            return 90 + b_degree
+        elif x2 <= x1 and y2 <= y1:
+            return 270 - b_degree
+        elif x2 <= x1 and y2 >= y1:
+            return 270 + b_degree
+        print("Why no valid bearing?")
+        return 0
 
     @staticmethod
     def calculate_bearing(v, xy=True):
@@ -294,3 +297,23 @@ class Utility:
         if r.area / Box(*r.bounds).area > 0.05 and r.area > min_area and r.area / r.length > 1:
             return False
         return True
+
+
+    @staticmethod
+    def calculate_turn_follow(v1, v2):
+        bearing1 = Utility.calculate_bearing(v1)
+        bearing2 = Utility.calculate_bearing(v2)
+        if abs(bearing1 - bearing2) <= Parameters.Parameters.alpha:
+            return 'follow'
+        elif 180 - Parameters.Parameters.alpha <= abs(bearing1 - bearing2) <= 180 + Parameters.Parameters.alpha:
+            return 'turn back'
+        elif bearing1 > bearing2:
+            if bearing1 - bearing2 > 180 + Parameters.Parameters.alpha:
+                return 'veer left'
+            else:
+                return 'turn left'
+        else:
+            if bearing2 - bearing1 > 180 - Parameters.Parameters.alpha:
+                return'veer right'
+            else:
+                return 'turn right'

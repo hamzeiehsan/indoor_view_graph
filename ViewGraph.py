@@ -702,7 +702,7 @@ class ViewGraph:
                     current_idx = temp_idx
         return instructions
 
-    def generate_route_description(self, vpath):
+    def generate_route_description(self, vpath, with_localization=True, with_destination=True):
         instructions = []
         v_attrs = []
         for v in vpath:
@@ -710,12 +710,13 @@ class ViewGraph:
             v_attrs.append(v_attr)
 
         start = v_attrs[0]
-        if len(start['f_action']) > 0:
-            instructions.append('Head towards {}'.format(start['f_action'][0]))
-        elif len(start['l_action']) > 0:
-            instructions.append('Start with {} on your left'.format(start['l_action'][0]))
-        elif len(start['r_action']) > 0:
-            instructions.append('Start with {} on your right'.format(start['r_action'][0]))
+        if with_localization:
+            if len(start['f_action']) > 0:
+                instructions.append('Head towards {}'.format(start['f_action'][0]))
+            elif len(start['l_action']) > 0:
+                instructions.append('Start with {} on your left'.format(start['l_action'][0]))
+            elif len(start['r_action']) > 0:
+                instructions.append('Start with {} on your right'.format(start['r_action'][0]))
 
         r_attrs = []
         for idx, v in enumerate(vpath):
@@ -744,9 +745,10 @@ class ViewGraph:
                         instructions.append('move further and ' + act + ' in the first decision point')
         if len(temp) > 0:
             instructions.extend(self.minimal_description_follow(temp, temp_vids))
-        instructions[len(instructions) - 1] = instructions[len(instructions) - 1] \
+        if with_destination:
+            instructions[len(instructions) - 1] = instructions[len(instructions) - 1] \
                                               + ' and move forward until you reach the destination'
-        Utility.print_instructions(instructions)
+        # Utility.print_instructions(instructions)
         return instructions
 
     def generate_door_to_door_graph(self, isovist_object, only_doors=False):
