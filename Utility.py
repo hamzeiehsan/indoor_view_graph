@@ -300,7 +300,7 @@ class Utility:
 
 
     @staticmethod
-    def calculate_turn_follow(v1, v2):
+    def calculate_turn_follow(v1, v2):  #todo: NOPE! This is Wrong! Maybe through ego dir?
         bearing1 = Utility.calculate_bearing(v1)
         bearing2 = Utility.calculate_bearing(v2)
         if abs(bearing1 - bearing2) <= Parameters.Parameters.alpha:
