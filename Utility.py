@@ -7,7 +7,7 @@ import skgeom as sg
 import visilibity as vis
 from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
-from shapely.geometry import shape, Point, LineString
+from shapely.geometry import shape, Point, LineString, box as Box
 from shapely.affinity import rotate, scale
 from py2d.Math import Polygon as PolyPy2D
 
@@ -288,3 +288,9 @@ class Utility:
             return [polygon]
         py2dpoly = Utility.toPolyPy2D(polygon)
         return [Utility.fromPolyPy2D(poly) for poly in PolyPy2D.convex_decompose(py2dpoly, [])]
+
+    @staticmethod
+    def ill_shaped(r, min_area=50):
+        if r.area / Box(*r.bounds).area > 0.05 and r.area > min_area and r.area / r.length > 1:
+            return False
+        return True

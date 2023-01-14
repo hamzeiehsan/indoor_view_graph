@@ -138,7 +138,7 @@ class IndoorEnvironment:
                                 if d['properties']['id'] == d2['properties']['id']:
                                     did2 = tdid2
                                     break
-                            if did2 != -1:
+                            if did2 != -1:  # todo: augment turn or follow action to edges!
                                 for vvto1 in vgs[idx].to_door_vids[did]:
                                     for vvfrom2 in vgs[idx2].from_door_vids[did2]:
                                         v1 = vgs[idx].rviews[vvto1]

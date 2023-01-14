@@ -6,7 +6,7 @@ import networkx as nx
 from numpy import tan
 from shapely.geometry import Point, LineString
 from shapely.geometry import Polygon as Poly, LinearRing
-from shapely.ops import unary_union, polygonize, nearest_points
+from shapely.ops import unary_union, polygonize, nearest_points, cascaded_union
 
 from Parameters import Parameters
 from Plotter import Plotter
@@ -15,6 +15,7 @@ from Utility import Utility
 
 class ViewGraph:
     def __init__(self, isovist_object, container_info):
+        # Here, we store essential information of an container view graph including name, landmark and door info.
         self.name = container_info['name']
         self.door_info = container_info['door_info']
         self.landmark_info = container_info['landmark_info']
@@ -87,54 +88,55 @@ class ViewGraph:
         overlay_regions = list(polygonize(unary_union(list(x.exterior for x in self.shapes_list))))
         gdf = gpd.GeoDataFrame(geometry=overlay_regions)
         regions = list(gdf['geometry'])
-        # dfs = []
-        # for idx, shp in enumerate(self.shapes_list):
-        #     df = gpd.GeoDataFrame({'geometry': gpd.GeoSeries([shp]), 'idx:{}'.format(idx): 1})
-        #     df.simplify(0.00001)
-        #     dfs.append(df)
-        # dff = dfs[0]
-        # for df in dfs[1:]:
-        #     dff = gpd.overlay(dff, df, how='union')
-        #     dff = dff.explode()
-        # signatures = []
-        # for index_row, row in dff.iterrows():
-        #     signature = []
-        #     for idx in range(len(isovist_object.door_points)):
-        #         key = 'idx:{}'.format(idx)
-        #         if row[key] == 1:
-        #             signature.append(idx)
-        #     signatures.append(signature)
-        # regions = list(dff['geometry'])
 
         print('region initial : {}'.format(len(regions)))
-        self.regions_list = []
+        regions_list = []
         for r in regions:
-            self.regions_list.extend(Utility.convex_decomposition(r))
+            regions_list.extend(Utility.convex_decomposition(r))
 
-        # print('region initial : {}'.format(len(regions)))
-        # regions_copy = []
-        # for r in regions:
-        #     regions_copy.extend(Utility.convex_decomposition(r))
-        # idxes = []
-        # big_regions = []
-        # for rid, region in enumerate(regions_copy):
-        #     if region.area > Parameters.min_area:
-        #         big_regions.append(region)
-        #         idxes.append(rid)
-        # self.regions_list = big_regions
+        # todo
+        #  create a meaningful set of regions
+        valid_regions = []
+        invalid_regions = []
+        for r in regions_list:
+            if Utility.ill_shaped(r):
+                invalid_regions.append(r)
+            else:
+                valid_regions.append(r)
 
-        self.plot_all_regions(isovist_object)
+        invalid_unified = []
+        for g in cascaded_union(invalid_regions).geoms:
+            invalid_unified.append(g)
+        invalid_regions = invalid_unified
+
+        # todo - store info about which points in which unwanted area?
+
+        # todo - store info about which areas are connected to these invalids?
+
+        # todo - store info of which areas should be considered connected?
+        #  based on their connectivity to these invalid areas
+        additional_connections = []
+        from shapely.geometry import Point, LineString
+        for inv_r in invalid_regions:
+            connected = []
+            connected_ids = []
+            for rid, r in enumerate(valid_regions):
+                if inv_r.touches(r):
+                    connected.append(r)
+                    connected_ids.append(rid)
+            for idx, c1 in enumerate(connected):
+                for idx2, c2 in enumerate(connected):
+                    if idx < idx2:
+                        merged = cascaded_union([inv_r, c1, c2])
+                        l = LineString([c1.centroid, c2.centroid])
+                        l_intersection = merged.intersection(l)
+                        if isinstance(l_intersection, LineString) and l_intersection.length / l.length > 0.99:
+                            additional_connections.append([connected_ids[idx], connected_ids[idx2]])
+
+        self.regions_list = valid_regions
+
+        # self.plot_all_regions(isovist_object)
         print('regions : {0} -- {1}'.format(len(self.regions_list), len(regions)))
-
-        # if len(self.regions_list) > 1:
-        #     connected_regions = []
-        #     self.calculate_adjacency_matrix()
-        #     for key in self.adjacency_matrix:
-        #         if len(self.adjacency_matrix[key]) > 0:
-        #             connected_regions.append(key)
-        #     self.regions_list = [self.regions_list[idx] for idx in connected_regions]
-        #     self.signatures = [self.signatures[idx] for idx in connected_regions]
-        # print('regions : {0}'.format(len(self.regions_list)))
 
         # calculate regions signatures
         print('calculating the visibility signatures...')
@@ -145,12 +147,12 @@ class ViewGraph:
 
         # adjacent regions
         print('calculating adjacency matrix for regions')
-
-        self.calculate_adjacency_matrix(isovist_object)
+        self.calculate_adjacency_matrix(additional=additional_connections)
 
         # constructing view graph for decomposed regions
 
         print('finding regions that contains doors/gateways and decision points')
+        # todo: consider additional info - based on removed regions and their connections
         self.regions_info = {i: self.regions_list[i].centroid for i in range(len(self.regions_list))}
         self.regions_doors_info = {}
         done = None
@@ -168,7 +170,9 @@ class ViewGraph:
                 chosen = None
                 for rid, r in enumerate(self.regions_list):
                     dr = r.distance(dpoint)
-                    if dr < min_dr:
+                    l = LineString([r.centroid, dpoint])
+                    l_intersection = isovist_object.space_shp.intersection(l)
+                    if dr < min_dr and isinstance(l_intersection, LineString):
                         min_dr = dr
                         chosen = rid
                 if chosen is not None:
@@ -1160,7 +1164,7 @@ class ViewGraph:
         for key, vals in self.adjacency_matrix.items():
             self.adjacency_matrix[key] = list(set(self.adjacency_matrix[key]))
 
-    def calculate_adjacency_matrix(self):
+    def calculate_adjacency_matrix(self, additional=[]):
         self.adjacency_matrix = {}
         for i in range(0, len(self.regions_list)):
             ri = self.regions_list[i]
@@ -1182,3 +1186,8 @@ class ViewGraph:
             self.adjacency_matrix[0] = []
         for key, vals in self.adjacency_matrix.items():
             self.adjacency_matrix[key] = list(set(self.adjacency_matrix[key]))
+        for a in additional:
+            if a[1] not in self.adjacency_matrix[a[0]]:
+                self.adjacency_matrix[a[0]].append(a[1])
+            if a[0] not in self.adjacency_matrix[a[1]]:
+                self.adjacency_matrix[a[1]].append(a[0])
