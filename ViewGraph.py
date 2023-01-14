@@ -420,7 +420,7 @@ class ViewGraph:
                     vid2 = int(vv2.replace('{0}-V'.format(self.name), ''))
                     bearing2 = Utility.calculate_bearing(self.rviews[vid2])
                     vv1 = '{0}-V{1}'.format(self.name, vid)
-                    if abs(bearing1 - bearing2) <= Parameters.alpha:
+                    if abs(bearing1 - bearing2) <= Parameters.alpha:  # todo: fix this
                         self.r_attributes[(vv1, vv2)] = {'action': 'follow'}
                     elif 180 - Parameters.alpha <= abs(bearing1 - bearing2) <= 180 + Parameters.alpha:
                         self.r_attributes[(vv1, vv2)] = {'action': 'turn back'}
