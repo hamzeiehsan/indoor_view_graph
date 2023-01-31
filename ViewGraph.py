@@ -414,26 +414,29 @@ class ViewGraph:
 
         self.r_attributes = {}
         for vid in self.rviews.keys():
-            bearing1 = Utility.calculate_bearing(self.rviews[vid])
+            # bearing1 = Utility.calculate_bearing(self.rviews[vid])
             for vv2, attributes in dict(self.rviewgraph['{0}-V{1}'.format(self.name, vid)]).items():
                 if attributes['label'] == 'move':
                     vid2 = int(vv2.replace('{0}-V'.format(self.name), ''))
-                    bearing2 = Utility.calculate_bearing(self.rviews[vid2])
+                    # bearing2 = Utility.calculate_bearing(self.rviews[vid2])
                     vv1 = '{0}-V{1}'.format(self.name, vid)
-                    if abs(bearing1 - bearing2) <= Parameters.alpha:  # todo: fix this
-                        self.r_attributes[(vv1, vv2)] = {'action': 'follow'}
-                    elif 180 - Parameters.alpha <= abs(bearing1 - bearing2) <= 180 + Parameters.alpha:
-                        self.r_attributes[(vv1, vv2)] = {'action': 'turn back'}
-                    elif bearing1 > bearing2:
-                        if bearing1 - bearing2 > 180 + Parameters.alpha:
-                            self.r_attributes[(vv1, vv2)] = {'action': 'veer left'}
-                        else:
-                            self.r_attributes[(vv1, vv2)] = {'action': 'turn left'}
-                    else:
-                        if bearing2 - bearing1 > 180 - Parameters.alpha:
-                            self.r_attributes[(vv1, vv2)] = {'action': 'veer right'}
-                        else:
-                            self.r_attributes[(vv1, vv2)] = {'action': 'turn right'}
+                    # if abs(bearing1 - bearing2) <= Parameters.alpha:  #  fixed -- moved to utility
+                    #     self.r_attributes[(vv1, vv2)] = {'action': 'follow'}
+                    # elif 180 - Parameters.alpha <= abs(bearing1 - bearing2) <= 180 + Parameters.alpha:
+                    #     self.r_attributes[(vv1, vv2)] = {'action': 'turn back'}
+                    # elif bearing1 > bearing2:
+                    #     if bearing1 - bearing2 > 180 + Parameters.alpha:
+                    #         self.r_attributes[(vv1, vv2)] = {'action': 'veer left'}
+                    #     else:
+                    #         self.r_attributes[(vv1, vv2)] = {'action': 'turn left'}
+                    # else:
+                    #     if bearing2 - bearing1 > 180 - Parameters.alpha:
+                    #         self.r_attributes[(vv1, vv2)] = {'action': 'veer right'}
+                    #     else:
+                    #         self.r_attributes[(vv1, vv2)] = {'action': 'turn right'}
+                    self.r_attributes[(vv1, vv2)] = {
+                        'action': Utility.calculate_turn_follow(self.rviews[vid], self.rviews[vid2])
+                    }
         nx.set_edge_attributes(self.rviewgraph, self.r_attributes)
 
     def vision_triangle(self, view_id):
@@ -501,13 +504,18 @@ class ViewGraph:
                                                     isovist_object.landmarks_points[lix].y())
         orders = self.ego_order(view, points)
         disappear_points = []
+        previous_point = None
         for key, d in orders.items():
             if key == 'end':
                 break
             for destination in destinations:
                 if destination is not None and 'door {}'.format(destination) == key:
                     break
-            disappear_points.append(view_line.interpolate(d - self.disappear_shift(view_idx, d) + Parameters.epsilon))
+            d_point = view_line.interpolate(d - self.disappear_shift(view_idx, d) + Parameters.epsilon)
+            if previous_point is None or d_point.distance(previous_point) > 0.1:
+                disappear_points.append(d_point)
+            previous_point = d_point
+
         if len(disappear_points) > 0:
             rid1 = self.which_region(disappear_points[0])
             decomposed = [{'ids': [ids[0], rid1], 'view': [view[0], disappear_points[0]]}]

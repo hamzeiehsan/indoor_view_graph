@@ -309,11 +309,21 @@ class Utility:
             return 'turn back'
         elif bearing1 > bearing2:
             if bearing1 - bearing2 > 180 + Parameters.Parameters.alpha:
-                return 'veer left'
+                return 'veer {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
             else:
-                return 'turn left'
+                return 'turn {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
         else:
             if bearing2 - bearing1 > 180 - Parameters.Parameters.alpha:
-                return'veer right'
+                return'veer {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
             else:
-                return 'turn right'
+                return 'turn {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
+
+    @staticmethod
+    def ego_dir_det(a, b, c):
+        det = ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+        if det > 0:
+            return 'left'
+        elif det == 0:
+            return 'front'
+        else:
+            return 'right'
