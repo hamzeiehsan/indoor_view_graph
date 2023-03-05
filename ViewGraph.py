@@ -511,7 +511,7 @@ class ViewGraph:
             for destination in destinations:
                 if destination is not None and 'door {}'.format(destination) == key:
                     break
-            d_point = view_line.interpolate(d - self.disappear_shift(view_idx, d) + Parameters.epsilon)
+            d_point = view_line.interpolate(d - self.disappear_shift(view_idx, d, points[key]) + Parameters.epsilon)
             if previous_point is None or d_point.distance(previous_point) > 0.1:
                 disappear_points.append(d_point)
             previous_point = d_point
@@ -529,12 +529,12 @@ class ViewGraph:
             decomposed = [{'ids': ids, 'view': view}]
         return decomposed
 
-    def disappear_shift(self, vid, d, fov=Parameters.fov):
+    def disappear_shift(self, vid, d, dpoint, fov=Parameters.fov):
         view_line = self.rview_ls[vid]
         point = view_line.interpolate(d)
-        p1, p2 = nearest_points(view_line, point)
+        # p1, p2 = nearest_points(view_line, point)
         a = (90 - fov / 2) / 180 * math.pi
-        shift = tan(a) * point.distance(p1)
+        shift = tan(a) * point.distance(dpoint)
         return shift
 
     def shortest_path_regions(self, rid1, rid2, isvid=False):
