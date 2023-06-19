@@ -6,3 +6,6 @@ regions.*
 test.py
 todo.md
 *.html
+.DS_Store
+.DS_Store/
+.DS_Store
