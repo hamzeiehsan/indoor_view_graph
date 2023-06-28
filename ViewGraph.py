@@ -94,8 +94,6 @@ class ViewGraph:
         for r in regions:
             regions_list.extend(Utility.convex_decomposition(r))
 
-        # todo
-        #  create a meaningful set of regions
         valid_regions = []
         invalid_regions = []
         for r in regions_list:
@@ -109,12 +107,6 @@ class ViewGraph:
             invalid_unified.append(g)
         invalid_regions = invalid_unified
 
-        # todo - store info about which points in which unwanted area?
-
-        # todo - store info about which areas are connected to these invalids?
-
-        # todo - store info of which areas should be considered connected?
-        #  based on their connectivity to these invalid areas
         additional_connections = []
         from shapely.geometry import Point, LineString
         for inv_r in invalid_regions:
@@ -559,7 +551,7 @@ class ViewGraph:
         else:
             if len(vpath) >= 2:
                 if self.rviewgraph['{0}-V{1}'.format(self.name, vpath[0])] \
-                ['{0}-V{1}'.format(self.name, vpath[1])]['label'] == 'turn':
+                        ['{0}-V{1}'.format(self.name, vpath[1])]['label'] == 'turn':
                     vpath = vpath[1:]
                 if len(vpath) > 2:
                     vpath = vpath[:-1]
@@ -755,7 +747,7 @@ class ViewGraph:
             instructions.extend(self.minimal_description_follow(temp, temp_vids))
         if with_destination:
             instructions[len(instructions) - 1] = instructions[len(instructions) - 1] \
-                                              + ' and move forward until you reach the destination'
+                                                  + ' and move forward until you reach the destination'
         # Utility.print_instructions(instructions)
         return instructions
 
@@ -941,7 +933,7 @@ class ViewGraph:
                                     if expression not in relationships_investigated:
                                         nplets['n{}'.format(ncounter)] = {
                                             'exp': '{0} near {1}'.
-                                                format(l2r, l1r), 'reference_frame': 'relative',
+                                            format(l2r, l1r), 'reference_frame': 'relative',
                                             'sp_relation': 'near',
                                             'group': 1}
                                         references[l2r]['in'].append(
@@ -956,7 +948,7 @@ class ViewGraph:
                                     if expression not in relationships_investigated:
                                         nplets['n{}'.format(ncounter)] = {
                                             'exp': '{0} near {1}'.
-                                                format(l3r, l2r), 'reference_frame': 'relative',
+                                            format(l3r, l2r), 'reference_frame': 'relative',
                                             'sp_relation': 'near',
                                             'group': 1}
                                         references[l3r]['in'].append(
@@ -1163,7 +1155,7 @@ class ViewGraph:
                 ij_line = LineString([ric, rjc])
                 ij_intersection = isovist_object.space_shp.intersection(ij_line)
                 if isinstance(ij_intersection, LineString) \
-                    and (ij_line.length - ij_intersection.length)/ij_line.length < Parameters.epsilon:
+                        and (ij_line.length - ij_intersection.length) / ij_line.length < Parameters.epsilon:
                     self.adjacency_matrix[i].append(j)
                     if j not in self.adjacency_matrix.keys():
                         self.adjacency_matrix[j] = [i]

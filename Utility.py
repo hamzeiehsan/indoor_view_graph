@@ -135,7 +135,7 @@ class Utility:
         if xy:
             return Utility.calculate_coordinates_xy(v, angle, d)
         bearing = Utility.calculate_bearing(v)
-        nbearing = (bearing + angle)%360
+        nbearing = (bearing + angle) % 360
         x = v[0].x + d * sin(np.deg2rad(nbearing))
         y = v[0].y + d * cos(np.deg2rad(nbearing))
         return Point(x, y)
@@ -145,7 +145,7 @@ class Utility:
         p1 = v[0]
         vl = LineString(v)
         vlr = rotate(vl, angle, origin=p1)
-        vlrs = scale(vlr, xfact=d/(vlr.length+1), yfact=d/(vlr.length+1), origin=p1)
+        vlrs = scale(vlr, xfact=d / (vlr.length + 1), yfact=d / (vlr.length + 1), origin=p1)
         if len(vlrs.boundary.geoms) > 1:
             return vlrs.boundary.geoms[1]
         else:
@@ -215,12 +215,11 @@ class Utility:
         for v in skeleton.vertices:
             p = Point(v.point.x(), v.point.y())
             if area_shp.contains(p):
-
                 points.append(p)
         rm_points = []
         for d in doors:
             for p in points:
-                if d.distance(p) <= Parameters.Parameters.max_collect_geom/2:
+                if d.distance(p) <= Parameters.Parameters.max_collect_geom / 2:
                     rm_points.append(p)
                     break
         filtered_points = Utility.collect_points([p for p in points if p not in rm_points])
@@ -258,7 +257,7 @@ class Utility:
 
     @staticmethod
     def is_convex(polygon):
-        if (polygon.convex_hull.area-polygon.area)/polygon.area < Parameters.Parameters.epsilon:
+        if (polygon.convex_hull.area - polygon.area) / polygon.area < Parameters.Parameters.epsilon:
             return True
         return False
 
@@ -272,7 +271,6 @@ class Utility:
             if idx < len(xlist) - 1:
                 xy_tuples.append([x, ylist[idx]])
         return PolyPy2D.from_tuples(xy_tuples)
-
 
     @staticmethod
     def fromPolyPy2D(polyPy2D):
@@ -298,9 +296,8 @@ class Utility:
             return False
         return True
 
-
     @staticmethod
-    def calculate_turn_follow(v1, v2):  #todo: NOPE! This is Wrong! Maybe through ego dir?
+    def calculate_turn_follow(v1, v2):  # todo: NOPE! This is Wrong! Maybe through ego dir?
         bearing1 = Utility.calculate_bearing(v1)
         bearing2 = Utility.calculate_bearing(v2)
         if abs(bearing1 - bearing2) <= Parameters.Parameters.alpha:
@@ -314,7 +311,7 @@ class Utility:
                 return 'turn {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
         else:
             if bearing2 - bearing1 > 180 - Parameters.Parameters.alpha:
-                return'veer {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
+                return 'veer {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
             else:
                 return 'turn {}'.format(Utility.ego_dir_det(v1[0], v1[1], v2[1]))
 

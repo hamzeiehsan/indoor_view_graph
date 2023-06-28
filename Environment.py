@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 
 
 class IndoorEnvironment:
-    def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):  # todo: link between containers
+    def __init__(self, address, pfiles, hfiles, dfiles, dpfiles, lfiles):
         self.containers = []
         self.container_info = {}
         self.containers_names = []
@@ -25,7 +25,7 @@ class IndoorEnvironment:
             print('environment files -- count is valid')
             for idx, pfile in enumerate(pfiles):
                 if 'workplace' not in pfile and 'room' not in pfile and 'focus' not in pfile:
-                # if True:
+                    # if True:
                     container = Container(address, pfile, hfiles[idx], dfiles[idx], dpfiles[idx], lfiles[idx])
                     self.containers.append(container)
                     self.containers_names.append(container.name)
@@ -56,7 +56,8 @@ class IndoorEnvironment:
             for d in doors['features']:
                 if d['properties']['container1'] == name or d['properties']['container2'] == name:
                     doors_features.append(d)
-                    doors_points.append(shapely.geometry.Point(d['geometry']['coordinates'][0], d['geometry']['coordinates'][1]))
+                    doors_points.append(
+                        shapely.geometry.Point(d['geometry']['coordinates'][0], d['geometry']['coordinates'][1]))
             doors_features = FeatureCollection(doors_features)
             landmarks_features = []
             for l in landmarks['features']:
@@ -149,7 +150,7 @@ class IndoorEnvironment:
                                             vto1, vfrom2,
                                             weight=Parameters.door_weight + Utility.calculate_distance(v1[0], v1[1]),
                                             label='Enter {0} and {1}'.format(container.door_names[did],
-                                                                   Utility.calculate_turn_follow(v1, v2)),
+                                                                             Utility.calculate_turn_follow(v1, v2)),
                                             action='enter')
                                 for vvto2 in vgs[idx2].to_door_vids[did2]:
                                     for vvfrom1 in vgs[idx].from_door_vids[did]:
@@ -192,108 +193,3 @@ class IndoorEnvironment:
                 print('enter: {}'.format(container_name))
                 current = container_name
         return spath, path_view
-
-
-if __name__ == '__main__':
-    # Basic environment
-    if Parameters.basic:
-        address = 'envs/basic/'
-        pfiles = ['t_bound.geojson']
-        hfiles = [None]
-        dfiles = ['t_doors.geojson']
-        dpfiles = [None]
-        lfiles = ['t_landmarks.geojson']
-        # create an indoor environment
-        ie = IndoorEnvironment(address, pfiles, hfiles, dfiles, dpfiles, lfiles)
-
-    # Hypo environment
-    elif Parameters.hypo:
-        address = 'envs/hypo/'
-        pfiles = ['hypo_env.geojson']
-        hfiles = ['hypo_holes.geojson']
-        dfiles = ['hypo_doors.geojson']
-        dpfiles = ['hypo_dpoints.geojson']
-        lfiles = ['hypo_landmarks.geojson']
-        # create an indoor environment
-        ie = IndoorEnvironment(address, pfiles, hfiles, dfiles, dpfiles, lfiles)
-
-    # MC5 real world environment
-    else:
-        address = 'envs/mc-floor-5/'
-        pfiles, hfiles, dfiles, dpfiles, lfiles = IndoorEnvironment.reformat(
-            address, 'containers.geojson', 'doors.geojson', 'landmarks.geojson')
-        # create an indoor environment
-        ie = IndoorEnvironment('', pfiles, hfiles, dfiles, dpfiles, lfiles)
-
-    # create view graph
-    vgs, isovist_objects = ie.construct_view_graph()
-    if not Parameters.basic and not Parameters.hypo:
-        cidx = ie.containers_names.index('Active Hub')
-        vg = vgs[cidx]
-        isovist_object = isovist_objects[cidx]
-
-        # calculate shortest path and generate verbal description
-        vp, pv = vg.shortest_path_regions(0, len(vg.regions_list) - 1)
-
-        # derive door-to-door visibility graph (doors and decision points)
-        connected, dtd_graph = vg.generate_door_to_door_graph(isovist_object)
-
-        # derive door-to-door visibility graph (only doors)
-        connected2, dtd_graph2 = vg.generate_door_to_door_graph(isovist_object, only_doors=True)
-
-        # derive all shortest path visibility graph and spanning tree
-        vps, pvs, st_vps, st_pvs, nvgraph = \
-            vg.generate_navigation_graph(isovist_object, indirect_access=False)
-
-        # derive place graph
-        place_graph = vg.generate_place_graph(isovist_object)
-
-        input('Press Enter: Describe the shortest path')
-        plotter = Plotter()
-        plotter.add_isovist(isovist_object)
-        plotter.add_views(pv)
-        plotter.show()
-        plotter.close()
-        vg.generate_route_description(vp)
-
-        input('Press Enter: Door to door visibility (doors+gateways)')
-        plotter = Plotter()
-        plotter.add_isovist(isovist_object)
-        plotter.add_points_lines(connected)
-        plotter.show()
-        plotter.close()
-        plotter.write_graph('d-t-d-all.html', dtd_graph, is_directed=False)
-
-        input('Press Enter: Door to door visibility (only doors)')
-        plotter = Plotter()
-        plotter.add_poly(isovist_object.space_x, isovist_object.space_y)
-        plotter.add_holes(isovist_object.holes_x, isovist_object.holes_y)
-        plotter.add_points(isovist_object.door_points[:isovist_object.door_idx], 'doors')
-        plotter.add_points_lines(connected2)
-        plotter.show()
-        plotter.close()
-        plotter.write_graph('d-t-d-doors.html', dtd_graph2, is_directed=False)
-
-        input('Press Enter: Portal-junction navigation graph')
-        plotter = Plotter()
-        plotter.add_isovist(isovist_object)
-
-        for pv in pvs:
-            plotter.add_views(pv)
-        plotter.show()
-
-        plotter.refresh()
-        for pv in st_pvs:
-            plotter.add_views(pv)
-        plotter.show()
-
-        plotter.refresh()
-        for pv in st_pvs:
-            plotter.add_points_lines(pv, is_vis=False)
-        plotter.show()
-
-        input('Press Enter: Place graph generation; visualize for all and only for landmark 2')
-        plotter.write_graph('placegraph.html', place_graph)
-    else:
-        vg = vgs[0]
-        isovist_object = isovist_objects[0]
