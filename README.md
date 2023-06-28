@@ -5,4 +5,36 @@ This paper presents a graph model to simultaneously store route and configuratio
 
 
 ## Installation
-Here, you can find the information for dependecies and their version:
+Here, you can find the information for dependencies and their version. Make sure that the versions are compatible to what is specified below:
+
+|name|version|
+|:----|:------|
+|python| 3.9.7 |
+|geojson| 2.5.0 |
+|geopandas| 0.10.2|
+|matplotlib| 3.5.0 |
+|networkx| 2.6.3 |
+|numpy| 1.20.3|
+|py2d-fixed| 0.1   |
+|pyvis| 0.2.1 |
+|scikit-geometry| 0.1.2 |
+|shapely| 1.8.2 |
+|visilibity| 1.0.10|
+
+## Test cases
+All can be found in the 'envs' folder, which includes geojson files that represent the containers and doors:
+1. Real-world floorplan: mc-floor-5
+2. Hypothetical floorplans: basic and hypo environment
+
+
+## Running the code
+You can either try running and modifying the jupyter notebooks or the main.py
+
+```commandline
+python main.py
+```
+
+
+```commandline
+jupyter notebook
+```

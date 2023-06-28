@@ -1,10 +1,5 @@
 import warnings
 
-import shapely.geometry
-from geojson import MultiPolygon, Feature, FeatureCollection, dump
-
-from Container import Container
-from Isovist import Isovist
 from Parameters import Parameters
 from Plotter import Plotter
 from Environment import IndoorEnvironment

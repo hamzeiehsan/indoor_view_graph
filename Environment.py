@@ -6,7 +6,6 @@ from geojson import MultiPolygon, Feature, FeatureCollection, dump
 from Container import Container
 from Isovist import Isovist
 from Parameters import Parameters
-from Plotter import Plotter
 from Utility import Utility
 from ViewGraph import ViewGraph
 
