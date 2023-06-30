@@ -1,15 +1,15 @@
-FROM conda/miniconda3
+FROM continuumio/miniconda3
+
 COPY . /viewgraph
 WORKDIR /viewgraph
-RUN conda update conda
-RUN conda install python=3.9.6
+
+RUN conda create -n viewgraph python=3.9.7 jupyter notebook
+
+# Make RUN commands use the new environment:
+SHELL ["conda", "run", "-n", "viewgraph", "/bin/bash", "-c"]
+
 RUN conda config --add channels conda-forge
-RUN conda install -c conda-forge scikit-geometry
-RUN conda install geopandas
-RUN conda install -c conda-forge jpype1
-RUN conda install jupyter pandas numpy
-RUN pip install SALib seaborn
-RUN pip install geojson networkx py2d-fixed pyvis
-RUN pip install VisiLibity
+RUN conda install -c conda-forge geopandas scikit-geometry jpype1
+RUN pip install geojson networkx py2d-fixed pyvis VisiLibity
 EXPOSE 8888
 CMD jupyter notebook --port=8888
