@@ -22,7 +22,7 @@ class Parameters:
         fov = 160
         max_distance = 1000000
         min_area = 0.005
-        max_collect_geom = 25
+        max_collect_geom = 80  # default was 25 in the first round
 
     @staticmethod
     def hypo_basic_parameters():
