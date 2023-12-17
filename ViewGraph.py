@@ -103,8 +103,12 @@ class ViewGraph:
                 valid_regions.append(r)
 
         invalid_unified = []
-        for g in cascaded_union(invalid_regions).geoms:
-            invalid_unified.append(g)
+        temp_geom = cascaded_union(invalid_regions)
+        if temp_geom.geom_type == 'Polygon':
+            invalid_unified.append(temp_geom)
+        else:
+            for g in temp_geom.geoms:
+                invalid_unified.append(g)
         invalid_regions = invalid_unified
 
         additional_connections = []
