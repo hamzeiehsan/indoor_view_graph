@@ -8,6 +8,7 @@ import visilibity as vis
 from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
 from shapely.geometry import shape, Point, LineString, box as Box
+from shapely.ops import triangulate
 from shapely.affinity import rotate, scale
 from py2d.Math import Polygon as PolyPy2D
 
@@ -288,7 +289,14 @@ class Utility:
         if Utility.is_convex(polygon):
             return [polygon]
         py2dpoly = Utility.toPolyPy2D(polygon)
-        return [Utility.fromPolyPy2D(poly) for poly in PolyPy2D.convex_decompose(py2dpoly, [])]
+        try:
+            decomposed = [Utility.fromPolyPy2D(poly) for poly in PolyPy2D.convex_decompose(py2dpoly, [])]
+        except:
+            print('issue in decomposition library - check Poly2D python library for more information')
+            decomposed = [polygon]
+        return decomposed
+
+
 
     @staticmethod
     def ill_shaped(r, min_area=50):
