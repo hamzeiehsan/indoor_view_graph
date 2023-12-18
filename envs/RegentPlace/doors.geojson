@@ -1,0 +1,23 @@
+{
+"type": "FeatureCollection",
+"name": "doors",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1, "container1": "Corridor", "container2": "FraserSuites" }, "geometry": { "type": "Point", "coordinates": [ 243.668069461827372, -728.450312891113754 ] } },
+{ "type": "Feature", "properties": { "id": 2, "container1": "Corridor", "container2": "Arctic White" }, "geometry": { "type": "Point", "coordinates": [ 576.901799123905107, -687.013423028786065 ] } },
+{ "type": "Feature", "properties": { "id": 3, "container1": "Corridor", "container2": "Dioa by Devon" }, "geometry": { "type": "Point", "coordinates": [ 782.649735919078239, -658.351226763361979 ] } },
+{ "type": "Feature", "properties": { "id": 4, "container1": "Corridor", "container2": "Fujimi Bakehouse" }, "geometry": { "type": "Point", "coordinates": [ 785.532890044896362, -622.763326662939789 ] } },
+{ "type": "Feature", "properties": { "id": 5, "container1": "Corridor", "container2": "Fireside By Yunn" }, "geometry": { "type": "Point", "coordinates": [ 655.858265291085331, -638.450998154689955 ] } },
+{ "type": "Feature", "properties": { "id": 6, "container1": "Corridor", "container2": "Shop" }, "geometry": { "type": "Point", "coordinates": [ 553.575438047559373, -653.400281602002565 ] } },
+{ "type": "Feature", "properties": { "id": 7, "container1": "Corridor", "container2": "Yakitori Yokocho" }, "geometry": { "type": "Point", "coordinates": [ 416.15274561952441, -674.84314768460581 ] } },
+{ "type": "Feature", "properties": { "id": 8, "container1": "Corridor", "container2": "Ice Kirin Bar" }, "geometry": { "type": "Point", "coordinates": [ 240.770384856070081, -703.09557259073847 ] } },
+{ "type": "Feature", "properties": { "id": 9, "container1": "Ice Kirin Bar", "container2": "Loading Dock" }, "geometry": { "type": "Point", "coordinates": [ 234.685247183979953, -674.553379224029982 ] } },
+{ "type": "Feature", "properties": { "id": 10, "container1": "Loading Dock", "container2": "Shop" }, "geometry": { "type": "Point", "coordinates": [ 516.843559290930671, -590.781995097413642 ] } },
+{ "type": "Feature", "properties": { "id": 11, "container1": "Corridor", "container2": "Edomae Sushi" }, "geometry": { "type": "Point", "coordinates": [ 950.413344806008126, -618.917834793491807 ] } },
+{ "type": "Feature", "properties": { "id": 12, "container1": "Corridor", "container2": "Yakinku Yokocho" }, "geometry": { "type": "Point", "coordinates": [ 936.79422715894907, -658.616113892365433 ] } },
+{ "type": "Feature", "properties": { "id": 13, "container1": "Corridor", "container2": "Toilet" }, "geometry": { "type": "Point", "coordinates": [ 1034.444834077973383, -658.765897890671567 ] } },
+{ "type": "Feature", "properties": { "id": 14, "container1": "Corridor", "container2": "Mido Mart" }, "geometry": { "type": "Point", "coordinates": [ 1051.832306007509487, -568.498122653316727 ] } },
+{ "type": "Feature", "properties": { "id": 15, "container1": "Corridor", "container2": "Daiso" }, "geometry": { "type": "Point", "coordinates": [ 942.589661852218683, -428.273237312550066 ] } },
+{ "type": "Feature", "properties": { "id": 16, "container1": "Corridor", "container2": "The Parks Sydney" }, "geometry": { "type": "Point", "coordinates": [ 1052.122074468084975, -452.590738423028824 ] } }
+]
+}

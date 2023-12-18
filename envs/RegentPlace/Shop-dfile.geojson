@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [553.575438, -653.400282]}, "properties": {"id": 6, "container1": "Corridor", "container2": "Shop"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [516.843559, -590.781995]}, "properties": {"id": 10, "container1": "Loading Dock", "container2": "Shop"}}]}
