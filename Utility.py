@@ -13,6 +13,7 @@ from shapely.affinity import rotate, scale
 from py2d.Math import Polygon as PolyPy2D
 
 import Parameters
+from Plotter import Plotter
 
 
 class Utility:
@@ -293,6 +294,10 @@ class Utility:
             decomposed = [Utility.fromPolyPy2D(poly) for poly in PolyPy2D.convex_decompose(py2dpoly, [])]
         except:
             print('issue in decomposition library - check Poly2D python library for more information')
+            plotter = Plotter()
+            r_x, r_y = Utility.save_print_geojson(list(polygon.exterior.coords))
+            plotter.add_poly(r_x, r_y, 'b-')
+            plotter.show()
             decomposed = [polygon]
         return decomposed
 
