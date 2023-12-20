@@ -1,6 +1,7 @@
 class Parameters:
     basic = False
     hypo = False
+    mc = True
     if basic or hypo:
         # test example
         epsilon = 0.00001
@@ -12,6 +13,17 @@ class Parameters:
         max_distance = 1000
         min_area = 0.0000005
         max_collect_geom = 0.002
+    elif mc:
+        # real world example
+        epsilon = 0.01
+        door_weight = 50
+        turn_weight = 0.05
+        precision = 2
+        alpha = 40
+        fov = 160
+        max_distance = 1000000
+        min_area = 0.005
+        max_collect_geom = 25  # default was 25 in the first round
     else:
         # real world example
         epsilon = 0.01
@@ -22,7 +34,7 @@ class Parameters:
         fov = 160
         max_distance = 1000000
         min_area = 0.005
-        max_collect_geom = 100  # default was 25 in the first round
+        max_collect_geom = 100
 
     @staticmethod
     def hypo_basic_parameters():
@@ -37,7 +49,7 @@ class Parameters:
         Parameters.max_collect_geom = 0.002
 
     @staticmethod
-    def real_world_parameters():
+    def real_world_parameters(mc=True):
         Parameters.epsilon = 0.01
         Parameters.door_weight = 50
         Parameters.turn_weight = 0.05
@@ -46,14 +58,17 @@ class Parameters:
         Parameters.fov = 160
         Parameters.max_distance = 1000000
         Parameters.min_area = 0.005
-        Parameters.max_collect_geom = 25
+        if mc:
+            Parameters.max_collect_geom = 25
+        else:
+            Parameters.max_collect_geom = 100
 
     @staticmethod
-    def set_env(env="real"):
+    def set_env(env="real", mc=True):
         if env == "real":
             Parameters.hypo = False
             Parameters.basic = False
-            Parameters.real_world_parameters()
+            Parameters.real_world_parameters(mc=mc)
         elif env == "hypo":
             Parameters.hypo = True
             Parameters.basic = False
