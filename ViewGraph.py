@@ -155,7 +155,7 @@ class ViewGraph:
         for pid, door in enumerate(isovist_object.door_points):
             dpoint = Point(door.x(), door.y())
             for rid, r in enumerate(self.regions_list):
-                if r.contains(dpoint) or dpoint.touches(r):
+                if r.contains(dpoint) or dpoint.touches(r) or r.distance(dpoint) < 0.00001:
                     if rid not in self.regions_doors_info.keys():
                         self.regions_doors_info[rid] = []
                     self.regions_doors_info[rid].append(pid)

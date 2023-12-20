@@ -119,5 +119,7 @@ class Isovist:
                 if isinstance(intersection, MultiLineString) or isinstance(intersection, GeometryCollection):
                     return True
                 return False
+            elif self.space_shp.distance(view_ls) < 0.00001:
+                return False
             return True
         return False
