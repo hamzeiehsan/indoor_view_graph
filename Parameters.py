@@ -90,7 +90,7 @@ class Parameters:
         print("Static Variables: ")
         variables = {'epsilon': Parameters.epsilon, 'precision': Parameters.precision,
                      'alpha': Parameters.alpha, 'fov': Parameters.fov,
-                     'min_area': Parameters.max_distance, 'max_area': Parameters.max_distance,
+                     'min_area': Parameters.min_area, 'max_distance': Parameters.max_distance,
                      'door_weight': Parameters.door_weight, 'turn_weight': Parameters.turn_weight}
         for key, value in variables.items():
             print("\t{0}: {1}".format(key, value))

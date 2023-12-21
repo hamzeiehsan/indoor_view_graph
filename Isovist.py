@@ -119,7 +119,7 @@ class Isovist:
                 if isinstance(intersection, MultiLineString) or isinstance(intersection, GeometryCollection):
                     return True
                 return False
-            elif self.space_shp.distance(view_ls) < 0.00001:
+            elif (self.space_shp.distance(view_ls) < 0.00001 and not Parameters.hypo and not Parameters.basic):
                 return False
             return True
         return False

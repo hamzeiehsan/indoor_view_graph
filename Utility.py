@@ -1,5 +1,6 @@
 import itertools
 import math
+
 import geojson
 import networkx as nx
 import numpy as np
@@ -7,10 +8,9 @@ import skgeom as sg
 import visilibity as vis
 from geojson import Polygon
 from numpy import arctan2, sin, cos, degrees
-from shapely.geometry import shape, Point, LineString, box as Box
-from shapely.ops import triangulate
-from shapely.affinity import rotate, scale
 from py2d.Math import Polygon as PolyPy2D
+from shapely.affinity import rotate, scale
+from shapely.geometry import shape, Point, LineString, box as Box
 
 import Parameters
 from Plotter import Plotter
@@ -304,13 +304,17 @@ class Utility:
 
 
     @staticmethod
-    def ill_shaped(r, min_area=50):
-        if r.area / Box(*r.bounds).area > 0.05 and r.area > min_area and r.area / r.length > 1:
+    def ill_shaped(r):
+        min_area = 50
+        if Parameters.Parameters.hypo:
+            min_area = Parameters.Parameters.min_area
+        if r.area / Box(*r.bounds).area > 0.05 and r.area > min_area and \
+                (r.area / r.length > 1 or Parameters.Parameters.hypo or Parameters.Parameters.basic):
             return False
         return True
 
     @staticmethod
-    def calculate_turn_follow(v1, v2):  # todo: NOPE! This is Wrong! Maybe through ego dir?
+    def calculate_turn_follow(v1, v2):
         bearing1 = Utility.calculate_bearing(v1)
         bearing2 = Utility.calculate_bearing(v2)
         if abs(bearing1 - bearing2) <= Parameters.Parameters.alpha:
