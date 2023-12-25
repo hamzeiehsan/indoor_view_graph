@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[165.80144, -123.79349], [165.80144, -43.79349], [285.80144, -43.79349], [285.80144, -123.79349], [195.80144, -123.79349], [165.80144, -123.79349]]]]}, "properties": {"id": 2, "name": "c2", "full_name": "c2"}}]}

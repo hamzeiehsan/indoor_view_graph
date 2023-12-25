@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": [[[[335.80144, -223.79349], [415.80144, -223.79349], [415.80144, -288.79349], [335.80144, -288.79349], [335.80144, -223.79349]]]]}, "properties": {"id": 10, "name": "c10", "full_name": "c10"}}]}
