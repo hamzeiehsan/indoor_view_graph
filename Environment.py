@@ -178,6 +178,7 @@ class IndoorEnvironment:
                 connected_containers.append(container)
         self.cviewgraphs = vgs
         self.isovist_objects = isovist_objects
+
         return vgs, isovist_objects
 
     def shortest_path(self, container_name1, region_id1, container_name2, region_id2):  # hierarchical?

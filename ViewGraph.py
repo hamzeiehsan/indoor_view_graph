@@ -760,6 +760,7 @@ class ViewGraph:
         dtdgraph = nx.Graph()
         dids = []
         edges = []
+        edges_attributes = {}
         connected = []
         alreadythere = []
         skip_gateways = []
@@ -777,6 +778,8 @@ class ViewGraph:
                                 and str(didx) + '-' + str(d) not in alreadythere and didx not in skip_gateways:
                             connected.append([isovist_object.door_points[d], isovist_object.door_points[didx]])
                             edges.append((d, didx))
+                            edges_attributes[(d, didx)] = {'weight': Utility.door_points_distance(
+                                isovist_object.door_points[d],isovist_object.door_points[didx])}
                             alreadythere.append(str(d) + '-' + str(didx))
                             alreadythere.append(str(didx) + '-' + str(d))
         did_attributes = []
@@ -785,14 +788,15 @@ class ViewGraph:
             attrs = {}
             if dtype == 'dt':
                 dtype = 'decision point'
-                attrs = {'type': dtype, 'group': 1, 'label': self.door_info[d]}
+                attrs = {'type': dtype, 'group': 1, 'label': self.door_info[d], 'did': d}
             else:
                 dtype = 'door'
-                attrs = {'type': dtype, 'group': 2, 'label': self.door_info[d]}
+                attrs = {'type': dtype, 'group': 2, 'label': self.door_info[d], 'did': d}
             did_attributes.append((d, attrs))
 
         dtdgraph.add_nodes_from(did_attributes)
         dtdgraph.add_edges_from(edges)
+        nx.set_edge_attributes(dtdgraph, edges_attributes)
         return connected, dtdgraph
 
     def get_door_region(self, did):

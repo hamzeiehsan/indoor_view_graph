@@ -341,3 +341,76 @@ class Utility:
             return 'front'
         else:
             return 'right'
+
+    @staticmethod
+    def door_points_distance(d1, d2):
+        return Utility.calculate_distance(Point(d1.x(), d1.y()), Point(d2.x(), d2.y()))
+
+    @staticmethod
+    def same_door(d1, d2):
+        return Utility.calculate_distance(d1, d2) < 0.00001
+
+    @staticmethod
+    def global_gateway_ids(ie):
+        gdids = {}
+        door_gid = 0
+        for idx, vg in enumerate(ie.cviewgraphs):
+            if vg.name not in gdids.keys():
+                gdids[vg.name] = {}
+            isovist_object = ie.isovist_objects[idx]
+            dprops = isovist_object.door_props
+            dnames = vg.door_info
+            for didx, name in enumerate(dnames):
+                dprop = dprops[didx]
+                if dprop['type'] == 'dt':
+                    gdids[vg.name][didx] = door_gid
+                    door_gid += 1
+                else:
+                    if didx not in gdids[vg.name].keys():
+                        cname = name.replace("the door to ", "")
+                        cidx = ie.containers_names.index(cname)
+                        if cidx > idx:
+                            continue
+                        gdids[vg.name][didx] = door_gid
+                        if ie.cviewgraphs[cidx].name not in gdids.keys():
+                            gdids[ie.cviewgraphs[cidx].name] = {}
+                        matched = False
+                        for didx2, dprop2 in ie.isovist_objects[cidx].door_props.items():
+                            if dprop2['type'] != 'dt' and \
+                                Utility.calculate_distance(Point(dprop['x'], dprop['y']),
+                                                           Point(dprop2['x'], dprop2['y'])) < 0.00001:
+                                gdids[ie.cviewgraphs[cidx].name][didx2] = door_gid
+                                matched = True
+                                break
+                        if not matched:
+                            print('issue in matching: {0}-{1}'.format(vg.name, didx))
+                        door_gid += 1
+        return gdids
+
+
+    @staticmethod
+    def generate_door_to_door_graph(ie):
+        isovist_objects = ie.isovist_objects
+        vgs = ie.cviewgraphs
+        nids = []
+        gids = Utility.global_gateway_ids(ie)
+
+        for cname, vals in gids.items():
+            for did, gid in vals.items():
+                nids.append(gid)
+        G = nx.Graph()
+        G.add_nodes_from(nids)
+
+        dtds = []
+        edge_attributes = {}
+        for idx, vg in enumerate(vgs):
+            isovist_object = isovist_objects[idx]
+            connected, dtd_graph = vg.generate_door_to_door_graph(isovist_object, only_doors=False)
+            attributes = nx.get_edge_attributes(dtd_graph, 'weight')
+            for e in dtd_graph.edges:
+                real_e = (gids[vg.name][e[0]],
+                          gids[vg.name][e[1]])
+                edge_attributes[real_e] = {'weight': attributes[e]}
+                G.add_edge(*real_e)
+        nx.set_edge_attributes(G, edge_attributes)
+        return G

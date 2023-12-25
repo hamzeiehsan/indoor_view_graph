@@ -62,6 +62,8 @@ class Plotter:
     def show(self, legend=True):
         if legend:
             plt.legend()
+        plt.xticks([])
+        plt.yticks([])
         plt.show()
 
     def close(self):
